@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 // =============================================================================
 // CONFIGURACIÓN DE LA API
 // =============================================================================
-const BASE_URL = 'http://localhost:4000/api';
+const BASE_URL = 'https://poa-base-backend.onrender.com';
 
 async function apiFetch(endpoint, options = {}) {
   const token = localStorage.getItem('poa_token');
