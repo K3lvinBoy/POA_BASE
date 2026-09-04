@@ -8,7 +8,7 @@
 // AlertaService de lógica pura NO cambian.
 // =============================================================
 
-const BASE_URL = 'https://TU-API.onrender.com/api';
+const BASE_URL = 'https://poa-basepruebas.onrender.com';
 // ── Helper interno ────────────────────────────────────────────
 // Adjunta el token JWT a cada petición y lanza error si el
 // servidor responde con un status de error.
