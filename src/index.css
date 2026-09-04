@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fondo gris claro para toda la app */
+body {
+  @apply bg-gray-100;
+}
