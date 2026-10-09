@@ -307,17 +307,30 @@ function LoginCarousel() {
           key={src}
           className="absolute inset-0 w-full h-full"
           style={{
-            backgroundImage: `url(${src})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
             opacity: i === actual ? 1 : 0,
             transition: 'opacity 1s ease-in-out',
           }}
-        />
+        >
+          {/* Relleno borroso solo para los bordes vacíos */}
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `url(${src})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              filter: 'blur(30px) brightness(0.6)',
+              transform: 'scale(1.1)',
+            }}
+          />
+          {/* Imagen real, completa y sin deformar */}
+          <img
+            src={src}
+            alt={`Imagen ${i + 1}`}
+            className="absolute inset-0 w-full h-full"
+            style={{ objectFit: 'contain', objectPosition: 'center' }}
+          />
+        </div>
       ))}
-      {/* Capa oscura suave para que el login se lea bien */}
-      <div className="absolute inset-0 bg-black/30" />
     </div>
   );
 }
@@ -383,6 +396,7 @@ function LoginPage({ onLogin }) {
     </div>
   );
 }
+
 function Dashboard({ poas, metas, actividades, alerts, navigate }) {
   const poasActivos       = poas.filter((p) => p.estado === 'Activo').length;
   const metasEnProgreso   = metas.length;
