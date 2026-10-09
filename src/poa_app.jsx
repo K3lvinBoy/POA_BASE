@@ -332,8 +332,13 @@ function LoginPage({ onLogin }) {
     try {
       const result = await AuthService.login(email, password);
       onLogin(result.user);
-    } catch {
-      setError('Credenciales inválidas. Verifica tu email y contraseña.');
+    } catch (err) {
+      const msg = err?.message || '';
+      if (msg === 'Failed to fetch') {
+        setError('No se pudo conectar con el servidor. Si estaba inactivo, espera 1 minuto e intenta de nuevo.');
+      } else {
+        setError(msg || 'Credenciales inválidas. Verifica tu email y contraseña.');
+      }
     } finally {
       setCargando(false);
     }
@@ -1083,13 +1088,20 @@ function CalendarioPOA({ poaId, poas, metas, actividades, avances, navigate }) {
   );
 }
 
-function AlertasPage({ alerts, navigate }) {
+function AlertasPage({ alerts, notificaciones, navigate }) {
   return (
     <div className="p-6">
       <h3 className="text-lg font-semibold mb-3">Alertas y recordatorios</h3>
       <div className="bg-white p-4 rounded shadow space-y-3">
-        {alerts.length === 0 && <div className="text-gray-500">No hay alertas importantes</div>}
-        {alerts.map((a, i) => (
+        {!notificaciones && (
+          <div className="text-gray-500 text-sm">
+            Las alertas están desactivadas. Puedes activarlas en Configuración.
+          </div>
+        )}
+        {notificaciones && alerts.length === 0 && (
+          <div className="text-gray-500">No hay alertas importantes</div>
+        )}
+        {notificaciones && alerts.map((a, i) => (
           <div key={i} className="border p-3 rounded flex justify-between items-center">
             <div>
               <div className="font-medium">{a.actividad.nombre}</div>
@@ -1107,8 +1119,7 @@ function AlertasPage({ alerts, navigate }) {
   );
 }
 
-function ConfiguracionPOA({ user, setUser }) {
-  const [notificaciones, setNotificaciones] = useState(true);
+function ConfiguracionPOA({ user, setUser, notificaciones, setNotificaciones }) {
   const [nombre, setNombre]       = useState(user?.nombre   || '');
   const [apellido, setApellido]   = useState(user?.apellido || '');
   const [email, setEmail]         = useState(user?.email    || '');
@@ -1132,7 +1143,7 @@ function ConfiguracionPOA({ user, setUser }) {
     setMsg(''); setError('');
 
     // Validar contraseña PRIMERO, antes de tocar el servidor
-    const cambiarPass = passActual || passNueva || passConfirm;
+    const cambiarPass = passNueva || passConfirm;
     if (cambiarPass) {
       if (!passActual)                       { setError('Escribe tu contraseña actual');           return; }
       if (!passNueva)                        { setError('Escribe la nueva contraseña');            return; }
@@ -1170,7 +1181,15 @@ function ConfiguracionPOA({ user, setUser }) {
       <div className="bg-white p-5 rounded shadow space-y-4">
         <h3 className="font-semibold text-lg">Seguridad y Notificaciones</h3>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={notificaciones} onChange={(e) => setNotificaciones(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={notificaciones}
+            onChange={(e) => {
+              setNotificaciones(e.target.checked);
+              setError('');
+              setMsg(e.target.checked ? 'Alertas activadas' : 'Alertas desactivadas');
+            }}
+          />
           Activar notificaciones de alertas y actividades vencidas
         </label>
       </div>
@@ -1183,9 +1202,9 @@ function ConfiguracionPOA({ user, setUser }) {
         </div>
         <div className="space-y-2">
           <h4 className="font-semibold text-sm">Cambiar Contraseña</h4>
-          <input type="password" placeholder="Contraseña actual" value={passActual} onChange={(e) => setPassActual(e.target.value)} className="border px-3 py-2 rounded w-full" />
-          <input type="password" placeholder="Nueva contraseña" value={passNueva} onChange={(e) => setPassNueva(e.target.value)} className="border px-3 py-2 rounded w-full" />
-          <input type="password" placeholder="Confirmar nueva contraseña" value={passConfirm} onChange={(e) => setPassConfirm(e.target.value)} className="border px-3 py-2 rounded w-full" />
+          <input type="password" autoComplete="current-password" placeholder="Contraseña actual" value={passActual} onChange={(e) => setPassActual(e.target.value)} className="border px-3 py-2 rounded w-full" />
+          <input type="password" autoComplete="new-password" placeholder="Nueva contraseña" value={passNueva} onChange={(e) => setPassNueva(e.target.value)} className="border px-3 py-2 rounded w-full" />
+          <input type="password" autoComplete="new-password" placeholder="Confirmar nueva contraseña" value={passConfirm} onChange={(e) => setPassConfirm(e.target.value)} className="border px-3 py-2 rounded w-full" />
         </div>
         {msg   && <div className="text-green-600 text-sm">{msg}</div>}
         {error && <div className="text-red-600 text-sm">{error}</div>}
@@ -1209,6 +1228,16 @@ export default function POAApp() {
   const [actividades, setActividades] = useState([]);
   const [avances, setAvances]         = useState([]);
   const [alerts, setAlerts]           = useState([]);
+
+  // Preferencia de alertas (se guarda en el navegador)
+  const [notificaciones, setNotificacionesState] = useState(() => {
+    try { return localStorage.getItem('poa_notificaciones') !== 'false'; }
+    catch { return true; }
+  });
+  const setNotificaciones = useCallback((valor) => {
+    setNotificacionesState(valor);
+    try { localStorage.setItem('poa_notificaciones', String(valor)); } catch {}
+  }, []);
 
   // useCallback garantiza que navigate, setPoas, setMetas, etc.
   // no cambien de referencia en cada render, evitando loops en useEffect de hijos
@@ -1273,6 +1302,9 @@ export default function POAApp() {
     return <LoginPage onLogin={handleLogin} />;
   }
 
+  // Si las alertas están desactivadas, no se muestra ninguna
+  const alertsVisibles = notificaciones ? alerts : [];
+
   // Props base para componentes que solo necesitan navegar y leer estado
   const sharedProps = {
     navigate, poas, setPoas, metas, setMetas,
@@ -1281,11 +1313,11 @@ export default function POAApp() {
 
   const renderRoute = () => {
     // Rutas exactas
-    if (route === '/dashboard')     return <Dashboard poas={poas} metas={metas} actividades={actividades} alerts={alerts} navigate={navigate} />;
+    if (route === '/dashboard')     return <Dashboard poas={poas} metas={metas} actividades={actividades} alerts={alertsVisibles} navigate={navigate} />;
     if (route === '/gestion-poas')  return <GestionPoas poas={poas} setPoas={setPoas} metas={metas} actividades={actividades} navigate={navigate} />;
     if (route === '/calendario')    return <CalendarioPOA poas={poas} metas={metas} actividades={actividades} avances={avances} navigate={navigate} />;
-    if (route === '/alertas')       return <AlertasPage alerts={alerts} navigate={navigate} />;
-    if (route === '/configuracion') return <ConfiguracionPOA user={user} setUser={setUser} />;
+    if (route === '/alertas')       return <AlertasPage alerts={alertsVisibles} notificaciones={notificaciones} navigate={navigate} />;
+    if (route === '/configuracion') return <ConfiguracionPOA user={user} setUser={setUser} notificaciones={notificaciones} setNotificaciones={setNotificaciones} />;
     if (route === '/poa/nuevo')     return <PoaForm poas={poas} setPoas={setPoas} navigate={navigate} />;
 
     // Rutas /poa/... — orden: más específicas primero
