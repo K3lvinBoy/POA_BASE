@@ -303,39 +303,18 @@ function LoginCarousel() {
   return (
     <div className="fixed inset-0 w-full h-full overflow-hidden bg-gray-900">
       {SLIDES.map((src, i) => (
-        <div
+        <img
           key={src}
-          className="absolute inset-0 w-full h-full flex items-center justify-center"
+          src={src}
+          alt={`Imagen ${i + 1}`}
+          className="absolute inset-0 w-full h-full"
           style={{
+            objectFit: 'cover',       // llena la pantalla sin deformar
+            objectPosition: 'center',
             opacity: i === actual ? 1 : 0,
             transition: 'opacity 1s ease-in-out',
           }}
-        >
-          {/* Relleno borroso solo para los espacios vacíos */}
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: `url(${src})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              filter: 'blur(30px) brightness(0.6)',
-              transform: 'scale(1.1)',
-            }}
-          />
-          {/* Imagen real: nunca se agranda más de su tamaño original */}
-          <img
-            src={src}
-            alt={`Imagen ${i + 1}`}
-            style={{
-              position: 'relative',
-              maxWidth: '100%',
-              maxHeight: '100%',
-              width: 'auto',
-              height: 'auto',
-              objectFit: 'contain',
-            }}
-          />
-        </div>
+        />
       ))}
     </div>
   );
@@ -367,7 +346,7 @@ function LoginPage({ onLogin }) {
       <LoginCarousel />
 
       {/* Login encima del carrusel */}
-      <div className="relative z-10 w-full max-w-md bg-white/95 shadow-2xl p-6 rounded">
+      <div className="relative z-10 w-full max-w-md bg-white shadow-2xl p-6 rounded">
         <div className="flex items-center gap-4 mb-6">
           <img
             src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0lUOdC3FC0Ee_Rv-sTShXPjPQHzDcWb0vEK_fio8eJ60hQDTT"
