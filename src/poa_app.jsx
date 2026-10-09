@@ -305,13 +305,13 @@ function LoginCarousel() {
       {SLIDES.map((src, i) => (
         <div
           key={src}
-          className="absolute inset-0 w-full h-full"
+          className="absolute inset-0 w-full h-full flex items-center justify-center"
           style={{
             opacity: i === actual ? 1 : 0,
             transition: 'opacity 1s ease-in-out',
           }}
         >
-          {/* Relleno borroso solo para los bordes vacíos */}
+          {/* Relleno borroso solo para los espacios vacíos */}
           <div
             className="absolute inset-0"
             style={{
@@ -322,12 +322,18 @@ function LoginCarousel() {
               transform: 'scale(1.1)',
             }}
           />
-          {/* Imagen real, completa y sin deformar */}
+          {/* Imagen real: nunca se agranda más de su tamaño original */}
           <img
             src={src}
             alt={`Imagen ${i + 1}`}
-            className="absolute inset-0 w-full h-full"
-            style={{ objectFit: 'contain', objectPosition: 'center' }}
+            style={{
+              position: 'relative',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              width: 'auto',
+              height: 'auto',
+              objectFit: 'contain',
+            }}
           />
         </div>
       ))}
