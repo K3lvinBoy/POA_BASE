@@ -283,11 +283,10 @@ function Header({ user }) {
 
 // Imágenes del carrusel (están en public/img/)
 const SLIDES = [
-  '/img/1.jpg',
+  '/img/1.png',
   '/img/2.jpg',
   '/img/3.jpg',
   '/img/4.jpg',
-  '/img/5.jpg',
 ];
 
 function LoginCarousel() {
