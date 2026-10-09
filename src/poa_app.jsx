@@ -281,6 +281,43 @@ function Header({ user }) {
   );
 }
 
+// Imágenes del carrusel (están en public/img/)
+const SLIDES = [
+  '/img/1.jpg',
+  '/img/2.jpg',
+  '/img/3.jpg',
+  '/img/4.jpg',
+  '/img/5.jpg',
+];
+
+function LoginCarousel() {
+  const [actual, setActual] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActual((prev) => (prev + 1) % SLIDES.length);
+    }, 5000); // cambia cada 5 segundos
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="relative w-full h-full overflow-hidden bg-gray-900">
+      {SLIDES.map((src, i) => (
+        <img
+          key={src}
+          src={src}
+          alt={`Imagen ${i + 1}`}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{
+            opacity: i === actual ? 1 : 0,
+            transition: 'opacity 1s ease-in-out',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 function LoginPage({ onLogin }) {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -302,38 +339,46 @@ function LoginPage({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white shadow p-6 rounded">
-        <div className="flex items-center gap-4 mb-6">
-          <img
-            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0lUOdC3FC0Ee_Rv-sTShXPjPQHzDcWb0vEK_fio8eJ60hQDTT"
-            alt="Logo"
-            className="w-14 h-14 rounded object-cover"
-          />
-          <div>
-            <h1 className="text-xl font-bold">Iniciar Sesión</h1>
-            <p className="text-sm text-gray-500">Sistema POA - Tetla De La Solidaridad</p>
+    <div className="min-h-screen flex bg-gray-50">
+      {/* Carrusel automático (solo en pantallas medianas o grandes) */}
+      <div className="hidden md:block md:w-1/2 lg:w-3/5">
+        <LoginCarousel />
+      </div>
+
+      {/* Formulario de inicio de sesión */}
+      <div className="w-full md:w-1/2 lg:w-2/5 flex items-center justify-center p-6">
+        <div className="w-full max-w-md bg-white shadow p-6 rounded">
+          <div className="flex items-center gap-4 mb-6">
+            <img
+              src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0lUOdC3FC0Ee_Rv-sTShXPjPQHzDcWb0vEK_fio8eJ60hQDTT"
+              alt="Logo"
+              className="w-14 h-14 rounded object-cover"
+            />
+            <div>
+              <h1 className="text-xl font-bold">Iniciar Sesión</h1>
+              <p className="text-sm text-gray-500">Sistema POA - Tetla De La Solidaridad</p>
+            </div>
           </div>
+          <form onSubmit={handle} className="space-y-3">
+            <div>
+              <label className="block text-sm">Email</label>
+              <input value={email} onChange={(e) => setEmail(e.target.value)}
+                className="w-full border px-3 py-2 rounded" type="email" required />
+            </div>
+            <div>
+              <label className="block text-sm">Contraseña</label>
+              <input value={password} onChange={(e) => setPassword(e.target.value)}
+                className="w-full border px-3 py-2 rounded" type="password" required />
+            </div>
+            {error && <div className="text-red-600 text-sm">{error}</div>}
+            <div className="flex justify-end">
+              <button disabled={cargando}
+                className="bg-[#871A1A] text-white px-4 py-2 rounded disabled:opacity-50">
+                {cargando ? 'Entrando...' : 'Iniciar Sesión'}
+              </button>
+            </div>
+          </form>
         </div>
-        <form onSubmit={handle} className="space-y-3">
-          <div>
-            <label className="block text-sm">Email</label>
-            <input value={email} onChange={(e) => setEmail(e.target.value)}
-              className="w-full border px-3 py-2 rounded" type="email" required />
-          </div>
-          <div>
-            <label className="block text-sm">Contraseña</label>
-            <input value={password} onChange={(e) => setPassword(e.target.value)}
-              className="w-full border px-3 py-2 rounded" type="password" required />
-          </div>
-          {error && <div className="text-red-600 text-sm">{error}</div>}
-          <div className="flex justify-end">
-            <button disabled={cargando}
-              className="bg-[#871A1A] text-white px-4 py-2 rounded disabled:opacity-50">
-              {cargando ? 'Entrando...' : 'Iniciar Sesión'}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );
