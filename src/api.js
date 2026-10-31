@@ -104,6 +104,11 @@ export const POAAPI = {
       body: JSON.stringify(datos),
     });
   },
+
+  /** Elimina una meta (y sus actividades/avances en cascada). */
+  async eliminarMeta(metaId) {
+    return apiFetch(`/metas/${metaId}`, { method: 'DELETE' });
+  },
 };
 
 // =============================================================
