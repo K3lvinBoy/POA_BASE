@@ -86,6 +86,7 @@ class MetaService {
       body: JSON.stringify(datos),
     });
   }
+  static async eliminar(metaId) { return apiFetch(`/metas/${metaId}`, { method: 'DELETE' }); }
   static porPoa(metas, poaId) {
     return metas.filter((m) => m.id_poa === Number(poaId));
   }
@@ -609,9 +610,28 @@ function PoaForm({ poas, setPoas, navigate, editId }) {
   );
 }
 
-function PoaDetail({ id, poas, metas, setMetas, navigate }) {
+function PoaDetail({ id, poas, metas, setMetas, actividades = [], setActividades, setAvances, navigate }) {
   const poa = poas.find((p) => p.id === Number(id));
   const [cargandoMetas, setCargandoMetas] = useState(false);
+
+  // Elimina una meta (también dentro de un POA activo). El backend borra en cascada
+  // sus actividades y avances; aquí se limpia el estado local para reflejarlo.
+  const handleEliminarMeta = async (meta) => {
+    const actsMeta = actividades.filter((a) => a.id_meta === meta.id);
+    const aviso = actsMeta.length > 0
+      ? `¿Eliminar la meta "${meta.nombre}"?\n\nTambién se eliminarán sus ${actsMeta.length} actividad(es) y sus avances. Esta acción es irreversible.`
+      : `¿Eliminar la meta "${meta.nombre}"? Esta acción es irreversible.`;
+    if (!window.confirm(aviso)) return;
+    try {
+      await MetaService.eliminar(meta.id);
+      const idsActs = new Set(actsMeta.map((a) => a.id));
+      setMetas((prev) => prev.filter((m) => m.id !== meta.id));
+      if (setActividades) setActividades((prev) => prev.filter((a) => a.id_meta !== meta.id));
+      if (setAvances)     setAvances((prev) => prev.filter((av) => !idsActs.has(av.id_actividad)));
+    } catch (err) {
+      alert('Error al eliminar la meta: ' + err.message);
+    }
+  };
 
   // useCallback con [id] para que esta función solo se recree si cambia el POA
   const cargarMetas = useCallback(() => {
@@ -692,6 +712,7 @@ function PoaDetail({ id, poas, metas, setMetas, navigate }) {
                 <div className="space-x-2 flex-shrink-0">
                   <button className="text-[#871A1A] text-sm" onClick={() => navigate(`/meta/${m.id}`)}>Ver</button>
                   <button className="text-orange-600 text-sm" onClick={() => navigate(`/meta/${m.id}/editar`)}>Editar</button>
+                  <button className="text-red-600 text-sm" onClick={() => handleEliminarMeta(m)}>Eliminar</button>
                 </div>
               </div>
             ))}
@@ -1330,7 +1351,7 @@ export default function POAApp() {
       if (sufijo === 'editar')      return <PoaForm poas={poas} setPoas={setPoas} navigate={navigate} editId={poaId} />;
       if (sufijo === 'calendario')  return <CalendarioPOA poaId={poaId} poas={poas} metas={metas} actividades={actividades} avances={avances} navigate={navigate} />;
       // '' | 'metas' -> Ver detalles del POA
-      return <PoaDetail id={poaId} poas={poas} metas={metas} setMetas={setMetas} navigate={navigate} />;
+      return <PoaDetail id={poaId} poas={poas} metas={metas} setMetas={setMetas} actividades={actividades} setActividades={setActividades} setAvances={setAvances} navigate={navigate} />;
     }
 
     // Rutas /meta/... — orden: más específicas primero
