@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 // =============================================================================
 // CONFIGURACIÓN DE LA API
@@ -227,6 +227,20 @@ class AvanceService {
 // =============================================================================
 // COMPONENTES — todos definidos FUERA de POAApp para evitar remounts
 // =============================================================================
+
+// ¿Desde dónde se llegó a una actividad? Así "Volver" regresa a Alertas,
+// Calendario o Inicio en lugar de mandar siempre a la Meta.
+function origenDesde(ruta) {
+  if (ruta === '/alertas')   return { route: ruta, label: 'Alertas' };
+  if (ruta === '/dashboard') return { route: ruta, label: 'Inicio' };
+  if (ruta === '/calendario' || ruta.endsWith('/calendario')) return { route: ruta, label: 'Calendario' };
+  return null; // desde una Meta (u otra pantalla): se vuelve a la Meta
+}
+function destinoVolver(origen, idMeta) {
+  return origen
+    ? { ruta: origen.route, etiqueta: origen.label }
+    : { ruta: `/meta/${idMeta}`, etiqueta: 'la Meta' };
+}
 
 // Fecha legible: "01 ene 2026" (las fechas llegan del servidor como ISO en UTC)
 function fmtFecha(f) {
@@ -577,7 +591,7 @@ function GestionPoas({ poas, setPoas, metas, actividades, navigate }) {
       </div>
       <div className="bg-white rounded shadow overflow-auto">
         <table className="w-full text-sm">
-          <thead className="bg-[#fbeaea] text-[#871A1A]">
+          <thead className="bg-slate-100 text-slate-600">
             <tr>
               <th className="p-3 text-left font-semibold">Año</th>
               <th className="p-3 text-left font-semibold">Nombre</th>
@@ -597,7 +611,7 @@ function GestionPoas({ poas, setPoas, metas, actividades, navigate }) {
                 <td className="p-3"><span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${p.estado === 'Activo' ? 'bg-[#e6f4ea] text-[#137333]' : p.estado === 'Cerrado' ? 'bg-slate-100 text-slate-600' : 'bg-[#e8f0fe] text-[#1967d2]'}`}>{p.estado}</span></td>
                 <td className="p-3">{fmtFecha(p.fecha_inicio)}</td>
                 <td className="p-2 space-x-1">
-                  <button className="text-[#871A1A] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fbeaea] transition-colors" onClick={() => navigate(`/poa/${p.id}`)}>Ver Detalles</button>
+                  <button className="bg-[#871A1A] hover:bg-[#6b1313] text-white text-sm font-medium px-4 py-1 rounded-full shadow-sm transition-colors" onClick={() => navigate(`/poa/${p.id}`)}>Ver Detalles</button>
                   <button className="text-[#b45309] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fef3c7] transition-colors" onClick={() => navigate(`/poa/${p.id}/editar`)}>Editar</button>
                   <button className="text-[#d93025] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fce8e6] transition-colors" onClick={() => handleEliminar(p.id)}>Eliminar</button>
                 </td>
@@ -961,7 +975,7 @@ function MetaDetail({ id, metas, actividades, setActividades, avances, navigate 
   );
 }
 
-function ActividadForm({ id, metaId, actividades, metas, setActividades, navigate }) {
+function ActividadForm({ id, metaId, actividades, metas, setActividades, navigate, origen }) {
   const editing   = actividades.find((a) => a.id === Number(id));
   const [nombre, setNombre]           = useState(editing?.nombre                  || '');
   const [fechaInicio, setFechaInicio] = useState(editing?.fecha_inicio_planificada || '');
@@ -971,7 +985,7 @@ function ActividadForm({ id, metaId, actividades, metas, setActividades, navigat
   const [error, setError]             = useState('');
   const [guardando, setGuardando]     = useState(false);
 
-  const backRoute = editing ? `/meta/${editing.id_meta}` : (selMeta ? `/meta/${selMeta}` : '/gestion-poas');
+  const backRoute = editing ? destinoVolver(origen, editing.id_meta).ruta : (selMeta ? `/meta/${selMeta}` : '/gestion-poas');
 
   const save = async () => {
     if (!nombre || !fechaInicio || !fechaFin) { setError('Nombre y fechas son obligatorios'); return; }
@@ -982,7 +996,7 @@ function ActividadForm({ id, metaId, actividades, metas, setActividades, navigat
       if (editing) {
         const updated = await ActividadService.editar(editing.id, { ...datos, estado: editing.estado });
         setActividades((prev) => prev.map((a) => (a.id === editing.id ? updated : a)));
-        navigate(`/meta/${editing.id_meta}`);
+        navigate(backRoute);
       } else {
         const nueva = await ActividadService.registrar(selMeta, datos);
         setActividades((prev) => [...prev, nueva]);
@@ -1042,13 +1056,14 @@ function ActividadForm({ id, metaId, actividades, metas, setActividades, navigat
   );
 }
 
-function ActividadDetalle({ id, actividades, navigate }) {
+function ActividadDetalle({ id, actividades, navigate, origen }) {
   const act = actividades.find((a) => a.id === Number(id));
   if (!act) return <div className="p-6">Actividad no encontrada</div>;
+  const volver = destinoVolver(origen, act.id_meta);
   return (
     <div className="p-6">
       <div className="mb-3">
-        <button onClick={() => navigate(`/meta/${act.id_meta}`)} className="text-sm text-gray-500 hover:underline">← Volver a la Meta</button>
+        <button onClick={() => navigate(volver.ruta)} className="text-sm text-gray-500 hover:underline">← Volver a {volver.etiqueta}</button>
       </div>
       <h3 className="text-lg font-semibold">{act.nombre}</h3>
       <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mt-3 space-y-2 text-sm">
@@ -1064,13 +1079,14 @@ function ActividadDetalle({ id, actividades, navigate }) {
   );
 }
 
-function RegistroAvance({ actividadId, actividades, avances, setAvances, navigate }) {
+function RegistroAvance({ actividadId, actividades, avances, setAvances, navigate, origen }) {
   const actividad = actividades.find((a) => a.id === Number(actividadId));
   const [porcentaje, setPorcentaje]             = useState(0);
   const [comentariosLocal, setComentariosLocal] = useState('');
 
   if (!actividad) return <div className="p-6">Actividad no encontrada</div>;
   const hist = AvanceService.historial(avances, actividad.id);
+  const volver = destinoVolver(origen, actividad.id_meta);
 
   const guardar = async () => {
     try {
@@ -1079,14 +1095,14 @@ function RegistroAvance({ actividadId, actividades, avances, setAvances, navigat
         comentarios: comentariosLocal,
       });
       setAvances((prev) => [...prev, nuevo]);
-      navigate(`/meta/${actividad.id_meta}`);
+      navigate(volver.ruta);
     } catch (err) { alert('Error al guardar avance: ' + err.message); }
   };
 
   return (
     <div className="p-6">
       <div className="mb-3">
-        <button onClick={() => navigate(`/meta/${actividad.id_meta}`)} className="text-sm text-gray-500 hover:underline">← Volver a la Meta</button>
+        <button onClick={() => navigate(volver.ruta)} className="text-sm text-gray-500 hover:underline">← Volver a {volver.etiqueta}</button>
       </div>
       <h3 className="text-lg font-semibold">Registrar Avance — {actividad.nombre}</h3>
       <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 max-w-2xl mt-3 space-y-3">
@@ -1112,7 +1128,7 @@ function RegistroAvance({ actividadId, actividades, avances, setAvances, navigat
           ))}
         </div>
         <div className="flex justify-end gap-2">
-          <button onClick={() => navigate(`/meta/${actividad.id_meta}`)} className="px-5 py-2 border border-slate-300 rounded-full text-slate-700 font-medium hover:bg-slate-50 transition-colors">Cancelar</button>
+          <button onClick={() => navigate(volver.ruta)} className="px-5 py-2 border border-slate-300 rounded-full text-slate-700 font-medium hover:bg-slate-50 transition-colors">Cancelar</button>
           <button onClick={guardar} className="px-5 py-2 bg-[#871A1A] hover:bg-[#6b1313] text-white rounded-full shadow-sm font-medium transition-colors">Guardar Avance</button>
         </div>
       </div>
@@ -1161,21 +1177,19 @@ function CalendarioPOA({ poaId, poas, metas, actividades, avances, navigate }) {
 
   return (
     <div className="p-6">
+      <div className="flex flex-wrap items-center gap-2 mb-4 bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm">
+        <span className="text-sm font-semibold text-slate-700 mr-2">Leyenda</span>
+        <span className="bg-[#1a73e8] text-white px-3 py-1 rounded-full text-sm font-medium">Programadas</span>
+        <span className="bg-[#fbbc04] text-black px-3 py-1 rounded-full text-sm font-medium">En proceso</span>
+        <span className="bg-[#1e8e3e] text-white px-3 py-1 rounded-full text-sm font-medium">Completadas</span>
+        <span className="bg-[#d93025] text-white px-3 py-1 rounded-full text-sm font-medium">Vencidas</span>
+      </div>
       <div className="flex justify-between items-center mb-4">
         <button onClick={() => setCurrentDate(CalendarioService.mesAnterior(currentDate))} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-full text-lg transition-colors">◀</button>
         <h2 className="text-2xl font-bold">{monthName} {year}</h2>
         <button onClick={() => setCurrentDate(CalendarioService.mesSiguiente(currentDate))} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-full text-lg transition-colors">▶</button>
       </div>
       <div className="grid grid-cols-7 gap-2">{grid}</div>
-      <div className="mt-6 border-t border-slate-200 pt-4">
-        <div className="text-center font-bold text-base mb-3">LEYENDA</div>
-        <div className="flex gap-4 text-sm justify-center font-semibold">
-          <span className="bg-[#1a73e8] text-white px-4 py-1.5 rounded-full text-sm font-medium">Programadas</span>
-          <span className="bg-[#fbbc04] text-black px-4 py-1.5 rounded-full text-sm font-medium">En proceso</span>
-          <span className="bg-[#1e8e3e] text-white px-4 py-1.5 rounded-full text-sm font-medium">Completadas</span>
-          <span className="bg-[#d93025] text-white px-4 py-1.5 rounded-full text-sm font-medium">Vencidas</span>
-        </div>
-      </div>
     </div>
   );
 }
@@ -1198,10 +1212,10 @@ function AlertasPage({ alerts, notificaciones, navigate }) {
             <div>
               <div className="font-medium">{a.actividad.nombre}</div>
               <div className="text-xs text-gray-500">
-                Fin: {a.actividad.fecha_fin_planificada} · Tipo: {a.tipo} · Días: {a.dias}
+                Fin: {fmtFecha(a.actividad.fecha_fin_planificada)} · Tipo: {a.tipo} · Días: {a.dias}
               </div>
             </div>
-            <button className="text-sm text-[#871A1A]" onClick={() => navigate(`/actividad/${a.actividad.id}`)}>
+            <button className="text-sm text-[#871A1A] font-medium px-3 py-1 rounded-full hover:bg-[#fbeaea] transition-colors" onClick={() => navigate(`/actividad/${a.actividad.id}`)}>
               Ir a Actividad
             </button>
           </div>
@@ -1333,7 +1347,19 @@ export default function POAApp() {
 
   // useCallback garantiza que navigate, setPoas, setMetas, etc.
   // no cambien de referencia en cada render, evitando loops en useEffect de hijos
-  const navigate = useCallback((r) => setRoute(r), []);
+  // Recuerda desde qué pestaña se entró a una actividad (Alertas, Calendario, Inicio)
+  const [origenActividad, setOrigenActividad] = useState(null);
+  const routeRef = useRef(route);
+  routeRef.current = route;
+  const navigate = useCallback((r) => {
+    if (r.startsWith('/actividad/')) {
+      // Dentro de la actividad (editar, avance) se conserva el origen
+      if (!routeRef.current.startsWith('/actividad/')) setOrigenActividad(origenDesde(routeRef.current));
+    } else {
+      setOrigenActividad(null);
+    }
+    setRoute(r);
+  }, []);
 
   const cargarDatos = async () => {
     try {
@@ -1344,10 +1370,14 @@ export default function POAApp() {
       setLoading(false);  // ya podemos mostrar la UI
 
       // Cargar actividades y avances en segundo plano (no bloquean la UI)
-      const [actData, avData] = await Promise.all([
+      // Las metas de todos los POAs se cargan aquí para que cualquier pantalla
+      // (actividad, calendario, alertas) pueda encontrar su meta.
+      const [actData, avData, metasData] = await Promise.all([
         ActividadService.listar(),
         AvanceService.listar(),
+        Promise.all(poasData.map((p) => MetaService.listarPorPoa(p.id).catch(() => []))).then((r) => r.flat()),
       ]);
+      setMetas(metasData);
       setActividades(actData);
       setAvances(avData);
       setAlerts(AlertaService.generar(actData));
@@ -1442,9 +1472,9 @@ export default function POAApp() {
       const actividadId = partes[2];
       const sufijo      = partes.slice(3).join('/');
 
-      if (sufijo === 'editar') return <ActividadForm id={actividadId} actividades={actividades} metas={metas} setActividades={setActividades} navigate={navigate} />;
-      if (sufijo === 'avance') return <RegistroAvance actividadId={actividadId} actividades={actividades} avances={avances} setAvances={setAvances} navigate={navigate} />;
-      return <ActividadDetalle id={actividadId} actividades={actividades} navigate={navigate} />;
+      if (sufijo === 'editar') return <ActividadForm id={actividadId} actividades={actividades} metas={metas} setActividades={setActividades} navigate={navigate} origen={origenActividad} />;
+      if (sufijo === 'avance') return <RegistroAvance actividadId={actividadId} actividades={actividades} avances={avances} setAvances={setAvances} navigate={navigate} origen={origenActividad} />;
+      return <ActividadDetalle id={actividadId} actividades={actividades} navigate={navigate} origen={origenActividad} />;
     }
 
     return <div className="p-6 text-gray-500">Ruta no encontrada: {route}</div>;
