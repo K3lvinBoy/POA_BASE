@@ -611,7 +611,7 @@ function GestionPoas({ poas, setPoas, metas, actividades, navigate }) {
                 <td className="p-3"><span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${p.estado === 'Activo' ? 'bg-[#e6f4ea] text-[#137333]' : p.estado === 'Cerrado' ? 'bg-slate-100 text-slate-600' : 'bg-[#e8f0fe] text-[#1967d2]'}`}>{p.estado}</span></td>
                 <td className="p-3">{fmtFecha(p.fecha_inicio)}</td>
                 <td className="p-2 space-x-2 whitespace-nowrap">
-                  <button className="bg-[#e8f0fe] hover:bg-[#d2e3fc] text-[#1967d2] text-sm font-semibold px-4 py-1.5 rounded-full transition-colors" onClick={() => navigate(`/poa/${p.id}`)}>Ver Detalles</button>
+                  <button className="bg-[#f3e8fd] hover:bg-[#e9d2fd] text-[#7627bb] text-sm font-semibold px-4 py-1.5 rounded-full transition-colors" onClick={() => navigate(`/poa/${p.id}`)}>Ver Detalles</button>
                   <button className="bg-[#fef7e0] hover:bg-[#feefc3] text-[#b06000] text-sm font-semibold px-4 py-1.5 rounded-full transition-colors" onClick={() => navigate(`/poa/${p.id}/editar`)}>Editar</button>
                   <button className="bg-[#fce8e6] hover:bg-[#fad2cf] text-[#c5221f] text-sm font-semibold px-4 py-1.5 rounded-full transition-colors" onClick={() => handleEliminar(p.id)}>Eliminar</button>
                 </td>
