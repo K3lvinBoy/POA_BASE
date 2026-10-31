@@ -357,6 +357,24 @@ app.put('/api/metas/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// DELETE /api/metas/:id  — Eliminar meta (permitido también en POA activo)
+// Las actividades y avances de la meta se borran en cascada (FK ON DELETE CASCADE).
+app.delete('/api/metas/:id', authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT m.id FROM metas m JOIN poas p ON p.id = m.id_poa
+       WHERE m.id = ? AND p.creado_por = ?`,
+      [req.params.id, req.user.id]
+    );
+    if (!rows[0]) return res.status(404).json({ mensaje: 'Meta no encontrada' });
+
+    await pool.query('DELETE FROM metas WHERE id = ?', [req.params.id]);
+    res.json({ mensaje: 'Meta eliminada' });
+  } catch (err) {
+    res.status(500).json({ mensaje: err.message });
+  }
+});
+
 // =============================================================
 // ACTIVIDADES — Registrar, Editar, Eliminar
 // =============================================================
