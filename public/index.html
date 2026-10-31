@@ -2,9 +2,24 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <!-- fonts -->
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Jost:wght@400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&display=swap');
   html {
-    font-family: Jost;
+    font-family: Jost, system-ui, sans-serif;
+  }
+  body {
+    background-color: #f3f6fb;
+    color: #1f2937;
+    margin: 0;
+  }
+  /* Foco visible para teclado, en el guinda de la marca */
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid #871A1A;
+    outline-offset: 2px;
+  }
+  /* Respeta a quien desactiva animaciones en su sistema */
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
   }
 </style>
 
