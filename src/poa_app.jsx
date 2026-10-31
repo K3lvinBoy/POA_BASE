@@ -589,9 +589,9 @@ function GestionPoas({ poas, setPoas, metas, actividades, navigate }) {
           <option>Cerrado</option>
         </select>
       </div>
-      <div className="bg-white rounded shadow overflow-auto">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-100 text-slate-600">
+          <thead className="bg-[#871A1A] text-white">
             <tr>
               <th className="p-3 text-left font-semibold">Año</th>
               <th className="p-3 text-left font-semibold">Nombre</th>
@@ -610,10 +610,10 @@ function GestionPoas({ poas, setPoas, metas, actividades, navigate }) {
                 <td className="p-3 font-medium text-slate-900">{p.nombre}</td>
                 <td className="p-3"><span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${p.estado === 'Activo' ? 'bg-[#e6f4ea] text-[#137333]' : p.estado === 'Cerrado' ? 'bg-slate-100 text-slate-600' : 'bg-[#e8f0fe] text-[#1967d2]'}`}>{p.estado}</span></td>
                 <td className="p-3">{fmtFecha(p.fecha_inicio)}</td>
-                <td className="p-2 space-x-1">
-                  <button className="bg-[#871A1A] hover:bg-[#6b1313] text-white text-sm font-medium px-4 py-1 rounded-full shadow-sm transition-colors" onClick={() => navigate(`/poa/${p.id}`)}>Ver Detalles</button>
-                  <button className="text-[#b45309] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fef3c7] transition-colors" onClick={() => navigate(`/poa/${p.id}/editar`)}>Editar</button>
-                  <button className="text-[#d93025] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fce8e6] transition-colors" onClick={() => handleEliminar(p.id)}>Eliminar</button>
+                <td className="p-2 space-x-2 whitespace-nowrap">
+                  <button className="bg-[#e8f0fe] hover:bg-[#d2e3fc] text-[#1967d2] text-sm font-semibold px-4 py-1.5 rounded-full transition-colors" onClick={() => navigate(`/poa/${p.id}`)}>Ver Detalles</button>
+                  <button className="bg-[#fef7e0] hover:bg-[#feefc3] text-[#b06000] text-sm font-semibold px-4 py-1.5 rounded-full transition-colors" onClick={() => navigate(`/poa/${p.id}/editar`)}>Editar</button>
+                  <button className="bg-[#fce8e6] hover:bg-[#fad2cf] text-[#c5221f] text-sm font-semibold px-4 py-1.5 rounded-full transition-colors" onClick={() => handleEliminar(p.id)}>Eliminar</button>
                 </td>
               </tr>
             ))}
