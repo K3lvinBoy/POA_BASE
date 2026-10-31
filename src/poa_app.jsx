@@ -190,10 +190,10 @@ class CalendarioService {
       else if (fin < hoy) estadoFinal = 'Vencida';
       else if (inicio <= hoy) estadoFinal = 'En progreso';
       const color =
-        estadoFinal === 'Programada'    ? 'bg-blue-500 text-white'
-        : estadoFinal === 'En progreso' ? 'bg-yellow-400 text-black'
-        : estadoFinal === 'Completada'  ? 'bg-green-600 text-white'
-        :                                 'bg-red-600 text-white';
+        estadoFinal === 'Programada'    ? 'bg-[#1a73e8] text-white'
+        : estadoFinal === 'En progreso' ? 'bg-[#fbbc04] text-black'
+        : estadoFinal === 'Completada'  ? 'bg-[#1e8e3e] text-white'
+        :                                 'bg-[#d93025] text-white';
       return { ...a, estadoFinal, color };
     });
   }
@@ -228,44 +228,90 @@ class AvanceService {
 // COMPONENTES — todos definidos FUERA de POAApp para evitar remounts
 // =============================================================================
 
+// Fecha legible: "01 ene 2026" (las fechas llegan del servidor como ISO en UTC)
+function fmtFecha(f) {
+  if (!f) return '—';
+  const d = new Date(f);
+  if (isNaN(d)) return String(f).slice(0, 10);
+  return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+// Iconos de línea (24x24) para menú y tarjetas
+const ICONOS = {
+  inicio:   'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
+  poas:     'M9 3h6a1 1 0 011 1v1h2a1 1 0 011 1v14a1 1 0 01-1 1H6a1 1 0 01-1-1V6a1 1 0 011-1h2V4a1 1 0 011-1zM8 12h8M8 16h5',
+  calendar: 'M7 3v3M17 3v3M4 8h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z',
+  config:   'M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M6 15v4',
+  alerta:   'M6 17v-6a6 6 0 1112 0v6l2 2H4l2-2zM10 21h4',
+  meta:     'M5 21V4M5 4h12l-2 4 2 4H5',
+  check:    'M9 12l2 2 4-4M12 21a9 9 0 100-18 9 9 0 000 18z',
+  salir:    'M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 17l-5-5 5-5M5 12h11',
+};
+
+function Icono({ nombre, className = 'w-5 h-5' }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d={ICONOS[nombre]} />
+    </svg>
+  );
+}
+
 function Sidebar({ route, navigate, user, onLogout }) {
   return (
-    <div className="w-64 bg-white border-r h-screen p-4 flex flex-col flex-shrink-0">
-      <div className="mb-6 flex items-center gap-3">
+    <div className="w-64 bg-white border-r border-slate-200 h-screen p-4 flex flex-col flex-shrink-0">
+      <div className="mb-6 flex items-center gap-3 px-1">
         <img
           src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0lUOdC3FC0Ee_Rv-sTShXPjPQHzDcWb0vEK_fio8eJ60hQDTT"
           alt="Logo"
-          className="w-12 h-12 rounded object-cover"
+          className="w-12 h-12 rounded-xl object-cover shadow-sm"
         />
         <div>
-          <div className="font-bold">Sistema POA</div>
-          <div className="text-xs text-gray-500">KEALAR TECNOLOGY</div>
+          <div className="font-bold text-[#871A1A] leading-tight">Sistema POA</div>
+          <div className="text-xs text-slate-500">KEALAR TECNOLOGY</div>
         </div>
       </div>
-      <nav className="space-y-2">
+      <nav className="space-y-1">
         {[
-          ['/dashboard',    'Inicio'],
-          ['/gestion-poas', 'Gestión de POAs'],
-          ['/calendario',   'Calendario'],
-          ['/configuracion','Configuración'],
-          ['/alertas',      'Alertas'],
-        ].map(([rt, label]) => (
-          <button
-            key={rt}
-            onClick={() => navigate(rt)}
-            className={`w-full text-left px-3 py-2 rounded ${
-              route === rt
-                ? 'bg-[#f5f0f0] border-l-4 border-[#871A1A] text-[#871A1A]'
-                : 'hover:bg-gray-50'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+          ['/dashboard',     'Inicio',          'inicio'],
+          ['/gestion-poas',  'Gestión de POAs', 'poas'],
+          ['/calendario',    'Calendario',      'calendar'],
+          ['/configuracion', 'Configuración',   'config'],
+          ['/alertas',       'Alertas',         'alerta'],
+        ].map(([rt, label, icono]) => {
+          const activo = route === rt;
+          return (
+            <button
+              key={rt}
+              onClick={() => navigate(rt)}
+              aria-current={activo ? 'page' : undefined}
+              className={`w-full flex items-center gap-3 text-left px-4 py-2.5 rounded-full font-medium transition-colors ${
+                activo
+                  ? 'bg-[#f7dede] text-[#871A1A]'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <Icono nombre={icono} className={`w-5 h-5 ${activo ? 'text-[#871A1A]' : 'text-slate-500'}`} />
+              {label}
+            </button>
+          );
+        })}
       </nav>
-      <div className="mt-auto pt-6 border-t">
-        <div className="text-xs text-gray-500 mb-3">Usuario: {user?.nombre || 'Invitado'}</div>
-        <button onClick={onLogout} className="text-sm text-red-600">Cerrar sesión</button>
+      <div className="mt-auto pt-4 border-t border-slate-200">
+        <div className="flex items-center gap-3 mb-3 px-1">
+          <div className="w-9 h-9 rounded-full bg-[#871A1A] text-white flex items-center justify-center font-bold">
+            {(user?.nombre || 'I').charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-medium text-slate-800 truncate">{user?.nombre || 'Invitado'}</div>
+            <div className="text-xs text-slate-500">Usuario</div>
+          </div>
+        </div>
+        <button onClick={onLogout}
+          className="w-full flex items-center gap-3 px-4 py-2 rounded-full text-sm font-medium text-[#d93025] hover:bg-[#fce8e6] transition-colors">
+          <Icono nombre="salir" className="w-4 h-4" />
+          Cerrar sesión
+        </button>
       </div>
     </div>
   );
@@ -273,9 +319,10 @@ function Sidebar({ route, navigate, user, onLogout }) {
 
 function Header({ user }) {
   return (
-    <div className="flex items-center justify-between p-4 border-b bg-white flex-shrink-0">
-      <h2 className="text-lg font-semibold">Bienvenidos</h2>
-      <div className="text-sm text-gray-600">
+    <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0">
+      <h2 className="text-xl font-bold text-[#871A1A]">Bienvenidos</h2>
+      <div className="flex items-center gap-2 text-sm text-slate-600">
+        <span className="w-2.5 h-2.5 rounded-full bg-[#1e8e3e]" aria-hidden="true" />
         {user ? `Conectado como ${user.nombre}` : 'No autenticado'}
       </div>
     </div>
@@ -351,7 +398,7 @@ function LoginPage({ onLogin }) {
       <LoginCarousel />
 
       {/* Login encima del carrusel */}
-      <div className="relative z-10 w-full max-w-md bg-white shadow-2xl p-6 rounded">
+      <div className="relative z-10 w-full max-w-md bg-white shadow-2xl p-8 rounded-3xl border-t-4 border-[#871A1A]">
         <div className="flex items-center gap-4 mb-6">
           <img
             src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0lUOdC3FC0Ee_Rv-sTShXPjPQHzDcWb0vEK_fio8eJ60hQDTT"
@@ -367,17 +414,17 @@ function LoginPage({ onLogin }) {
           <div>
             <label className="block text-sm">Email</label>
             <input value={email} onChange={(e) => setEmail(e.target.value)}
-              className="w-full border px-3 py-2 rounded" type="email" required />
+              className="w-full border border-slate-300 px-3 py-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" type="email" required />
           </div>
           <div>
             <label className="block text-sm">Contraseña</label>
             <input value={password} onChange={(e) => setPassword(e.target.value)}
-              className="w-full border px-3 py-2 rounded" type="password" required />
+              className="w-full border border-slate-300 px-3 py-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" type="password" required />
           </div>
-          {error && <div className="text-red-600 text-sm">{error}</div>}
+          {error && <div className="text-[#d93025] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fce8e6] transition-colors">{error}</div>}
           <div className="flex justify-end">
             <button disabled={cargando}
-              className="bg-[#871A1A] text-white px-4 py-2 rounded disabled:opacity-50">
+              className="px-5 py-2 bg-[#871A1A] hover:bg-[#6b1313] text-white rounded-full shadow-sm font-medium transition-colors disabled:opacity-50">
               {cargando ? 'Entrando...' : 'Iniciar Sesión'}
             </button>
           </div>
@@ -396,33 +443,44 @@ function Dashboard({ poas, metas, actividades, alerts, navigate }) {
   const upcoming          = ActividadService.proximasDias(actividades, 7);
 
   const tarjetasConteo = (
-    <div className="grid grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
       {[
-        ['POAs Activos', poasActivos],
-        ['Metas', metasEnProgreso],
-        ['Actividades del Mes', actividadesMes],
-        ['Alertas', alertasPendientes],
-      ].map(([label, val]) => (
-        <div key={label} className="p-4 bg-white rounded shadow">
-          <div className="text-sm text-gray-500">{label}</div>
-          <div className="text-2xl font-bold">{val}</div>
+        // [etiqueta, valor, icono, fondo, color del texto/icono, fondo del icono]
+        ['POAs Activos',        poasActivos,       'poas',     'bg-[#fbeaea]', 'text-[#871A1A]', 'bg-[#871A1A]'],
+        ['Metas',               metasEnProgreso,   'meta',     'bg-[#e8f0fe]', 'text-[#1967d2]', 'bg-[#1a73e8]'],
+        ['Actividades del Mes', actividadesMes,    'calendar', 'bg-[#e6f4ea]', 'text-[#137333]', 'bg-[#1e8e3e]'],
+        ['Alertas',             alertasPendientes, 'alerta',   'bg-[#fef7e0]', 'text-[#b06000]', 'bg-[#f9ab00]'],
+      ].map(([label, val, icono, fondo, texto, fondoIcono]) => (
+        <div key={label} className={`p-4 rounded-2xl flex items-center gap-4 ${fondo}`}>
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white flex-shrink-0 ${fondoIcono}`}>
+            <Icono nombre={icono} className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-sm text-slate-600">{label}</div>
+            <div className={`text-3xl font-bold leading-tight ${texto}`}>{val}</div>
+          </div>
         </div>
       ))}
     </div>
   );
 
   const proximasPanel = (
-    <div className="bg-white p-4 rounded shadow">
-      <h3 className="font-semibold mb-2 text-gray-800">Próximas actividades (7 días)</h3>
+    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+      <h3 className="font-semibold mb-3 text-slate-800 flex items-center gap-2">
+        <span className="w-8 h-8 rounded-full bg-[#e8f0fe] text-[#1a73e8] flex items-center justify-center">
+          <Icono nombre="calendar" className="w-4 h-4" />
+        </span>
+        Próximas actividades (7 días)
+      </h3>
       <ul className="space-y-2 text-sm">
         {upcoming.length === 0 && <li className="text-gray-500">No hay actividades próximas</li>}
         {upcoming.map((a) => (
-          <li key={a.id} className="border p-2 rounded flex justify-between items-center">
+          <li key={a.id} className="border border-slate-200 bg-white p-3 rounded-xl flex justify-between items-center hover:border-[#1a73e8]/40 hover:shadow-md transition">
             <div>
               <div className="font-medium">{a.nombre}</div>
-              <div className="text-xs text-gray-500">{a.fecha_inicio_planificada} → {a.fecha_fin_planificada}</div>
+              <div className="text-xs text-gray-500">{fmtFecha(a.fecha_inicio_planificada)} → {fmtFecha(a.fecha_fin_planificada)}</div>
             </div>
-            <button className="text-sm text-blue-600" onClick={() => navigate(`/actividad/${a.id}`)}>Ver</button>
+            <button className="text-sm text-[#1a73e8] font-medium px-3 py-1 rounded-full hover:bg-[#e8f0fe] transition-colors" onClick={() => navigate(`/actividad/${a.id}`)}>Ver</button>
           </li>
         ))}
       </ul>
@@ -434,8 +492,8 @@ function Dashboard({ poas, metas, actividades, alerts, navigate }) {
       <div className="p-6 space-y-6">
         {tarjetasConteo}
         <div className="grid grid-cols-3 gap-4">
-          <div className="col-span-2 bg-white p-6 rounded shadow border-l-4 border-[#871A1A]">
-            <h3 className="text-lg font-semibold text-[#871A1A] mb-3">POA ACTIVO ACTUAL</h3>
+          <div className="col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h3 className="text-lg font-semibold text-[#871A1A] mb-3">POA activo actual</h3>
             <div className="text-gray-500 text-sm">No hay un POA activo actualmente.</div>
           </div>
           {proximasPanel}
@@ -448,16 +506,29 @@ function Dashboard({ poas, metas, actividades, alerts, navigate }) {
     <div className="p-6 space-y-6">
       {tarjetasConteo}
       <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 bg-white p-6 rounded shadow border-l-4 border-[#871A1A]">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-[#871A1A] tracking-wide">POA ACTIVO ACTUAL</h3>
-            <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">{poaActivo.estado}</span>
-          </div>
-          <div className="space-y-2 text-sm text-gray-700 leading-relaxed">
-            <p><span className="font-semibold text-gray-900">► Nombre:</span> {poaActivo.nombre}</p>
-            <p><span className="font-semibold text-gray-900">► Año:</span> {poaActivo.anio}</p>
-            <p><span className="font-semibold text-gray-900">► Período:</span> {poaActivo.fecha_inicio} - {poaActivo.fecha_fin}</p>
-            <p><span className="font-semibold text-gray-900">► Responsable:</span> {poaActivo.responsable || 'No asignado'}</p>
+        <div className="col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="h-1.5 bg-gradient-to-r from-[#871A1A] via-[#d93025] to-[#f9ab00]" />
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-[#871A1A]">POA activo actual</h3>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#e6f4ea] text-[#137333] text-xs font-semibold rounded-full">
+                <span className="w-2 h-2 rounded-full bg-[#1e8e3e]" aria-hidden="true" />
+                {poaActivo.estado}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {[
+                ['Nombre',      poaActivo.nombre],
+                ['Año',         poaActivo.anio],
+                ['Período',     `${fmtFecha(poaActivo.fecha_inicio)} — ${fmtFecha(poaActivo.fecha_fin)}`],
+                ['Responsable', poaActivo.responsable || 'No asignado'],
+              ].map(([k, v]) => (
+                <div key={k} className="rounded-xl bg-slate-50 px-4 py-3">
+                  <div className="text-xs text-slate-500">{k}</div>
+                  <div className="font-semibold text-slate-900">{v}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
         {proximasPanel}
@@ -493,11 +564,11 @@ function GestionPoas({ poas, setPoas, metas, actividades, navigate }) {
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">Gestión de POAs</h3>
-        <button onClick={() => navigate('/poa/nuevo')} className="bg-[#871A1A] text-white px-4 py-2 rounded">Nuevo POA</button>
+        <button onClick={() => navigate('/poa/nuevo')} className="bg-[#871A1A] hover:bg-[#6b1313] text-white px-5 py-2 rounded-full shadow-sm font-medium transition-colors">+ Nuevo POA</button>
       </div>
       <div className="mb-4 flex gap-2">
-        <input placeholder="Año" value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="border px-2 py-1 rounded" />
-        <select value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)} className="border px-2 py-1 rounded">
+        <input placeholder="Año" value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="border border-slate-300 px-2 py-1 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
+        <select value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)} className="border border-slate-300 px-2 py-1 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]">
           <option value="">Todos</option>
           <option>Activo</option>
           <option>Pendiente</option>
@@ -506,13 +577,13 @@ function GestionPoas({ poas, setPoas, metas, actividades, navigate }) {
       </div>
       <div className="bg-white rounded shadow overflow-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-[#fbeaea] text-[#871A1A]">
             <tr>
-              <th className="p-2 text-left">Año</th>
-              <th className="p-2 text-left">Nombre</th>
-              <th className="p-2 text-left">Estado</th>
-              <th className="p-2 text-left">Fecha Inicio</th>
-              <th className="p-2 text-left">Acciones</th>
+              <th className="p-3 text-left font-semibold">Año</th>
+              <th className="p-3 text-left font-semibold">Nombre</th>
+              <th className="p-3 text-left font-semibold">Estado</th>
+              <th className="p-3 text-left font-semibold">Fecha Inicio</th>
+              <th className="p-3 text-left font-semibold">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -520,15 +591,15 @@ function GestionPoas({ poas, setPoas, metas, actividades, navigate }) {
               <tr><td colSpan={5} className="p-4 text-gray-500 text-center">No hay POAs registrados.</td></tr>
             )}
             {filtered.map((p) => (
-              <tr key={p.id} className="border-t">
-                <td className="p-2">{p.anio}</td>
-                <td className="p-2">{p.nombre}</td>
-                <td className="p-2">{p.estado}</td>
-                <td className="p-2">{p.fecha_inicio}</td>
-                <td className="p-2 space-x-2">
-                  <button className="text-[#871A1A] text-sm" onClick={() => navigate(`/poa/${p.id}`)}>Ver Detalles</button>
-                  <button className="text-orange-600 text-sm" onClick={() => navigate(`/poa/${p.id}/editar`)}>Editar</button>
-                  <button className="text-red-600 text-sm" onClick={() => handleEliminar(p.id)}>Eliminar</button>
+              <tr key={p.id} className="border-t border-slate-200 hover:bg-slate-50 transition-colors">
+                <td className="p-3">{p.anio}</td>
+                <td className="p-3 font-medium text-slate-900">{p.nombre}</td>
+                <td className="p-3"><span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${p.estado === 'Activo' ? 'bg-[#e6f4ea] text-[#137333]' : p.estado === 'Cerrado' ? 'bg-slate-100 text-slate-600' : 'bg-[#e8f0fe] text-[#1967d2]'}`}>{p.estado}</span></td>
+                <td className="p-3">{fmtFecha(p.fecha_inicio)}</td>
+                <td className="p-2 space-x-1">
+                  <button className="text-[#871A1A] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fbeaea] transition-colors" onClick={() => navigate(`/poa/${p.id}`)}>Ver Detalles</button>
+                  <button className="text-[#b45309] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fef3c7] transition-colors" onClick={() => navigate(`/poa/${p.id}/editar`)}>Editar</button>
+                  <button className="text-[#d93025] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fce8e6] transition-colors" onClick={() => handleEliminar(p.id)}>Eliminar</button>
                 </td>
               </tr>
             ))}
@@ -570,40 +641,40 @@ function PoaForm({ poas, setPoas, navigate, editId }) {
         <button onClick={() => navigate('/gestion-poas')} className="text-sm text-gray-500 hover:underline">← Volver a Gestión de POAs</button>
       </div>
       <h3 className="text-lg font-semibold mb-4">{editing ? 'Editar POA' : 'Crear POA'}</h3>
-      <div className="bg-white p-4 rounded shadow space-y-3 max-w-xl">
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3 max-w-xl">
         <div>
           <label className="text-sm">Nombre del POA *</label>
-          <input value={nombre} onChange={(e) => setNombre(e.target.value)} className="w-full border px-3 py-2 rounded" />
+          <input value={nombre} onChange={(e) => setNombre(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
         </div>
         <div>
           <label className="text-sm">Año</label>
-          <input type="number" value={anio} onChange={(e) => setAnio(e.target.value)} className="w-full border px-3 py-2 rounded" />
+          <input type="number" value={anio} onChange={(e) => setAnio(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
         </div>
         <div>
           <label className="text-sm">Responsable</label>
-          <input value={responsable} onChange={(e) => setResponsable(e.target.value)} className="w-full border px-3 py-2 rounded" placeholder="Ej: Lic. Francisco Navarrete" />
+          <input value={responsable} onChange={(e) => setResponsable(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" placeholder="Ej: Lic. Francisco Navarrete" />
         </div>
         <div className="flex gap-2">
           <div className="flex-1">
             <label className="text-sm">Fecha Inicio</label>
-            <input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="w-full border px-3 py-2 rounded" />
+            <input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
           </div>
           <div className="flex-1">
             <label className="text-sm">Fecha Fin</label>
-            <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} className="w-full border px-3 py-2 rounded" />
+            <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
           </div>
         </div>
         <div>
           <label className="text-sm">Estado</label>
-          <select value={estado} onChange={(e) => setEstado(e.target.value)} className="w-full border px-3 py-2 rounded">
+          <select value={estado} onChange={(e) => setEstado(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]">
             <option>Activo</option>
             <option>Pendiente</option>
             <option>Cerrado</option>
           </select>
         </div>
         <div className="flex gap-2 justify-end">
-          <button onClick={() => navigate('/gestion-poas')} className="px-4 py-2 border rounded">Cancelar</button>
-          <button onClick={save} className="px-4 py-2 bg-[#871A1A] text-white rounded">Guardar</button>
+          <button onClick={() => navigate('/gestion-poas')} className="px-5 py-2 border border-slate-300 rounded-full text-slate-700 font-medium hover:bg-slate-50 transition-colors">Cancelar</button>
+          <button onClick={save} className="px-5 py-2 bg-[#871A1A] hover:bg-[#6b1313] text-white rounded-full shadow-sm font-medium transition-colors">Guardar</button>
         </div>
       </div>
     </div>
@@ -662,13 +733,13 @@ function PoaDetail({ id, poas, metas, setMetas, actividades = [], setActividades
       <div className="mb-3">
         <button onClick={() => navigate('/gestion-poas')} className="text-sm text-gray-500 hover:underline">← Volver a Gestión de POAs</button>
       </div>
-      <div className="bg-white p-4 rounded shadow">
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
         <h3 className="text-xl font-semibold">{poa.nombre}</h3>
         <div className="text-sm text-gray-600">Año {poa.anio} · {poa.estado} · Responsable: {poa.responsable || 'N/A'}</div>
-        <div className="text-sm text-gray-500">Período: {poa.fecha_inicio} — {poa.fecha_fin}</div>
-        <div className="mt-4 border-t pt-3 flex gap-2">
-          <button className="px-3 py-1 rounded border text-sm" onClick={() => navigate(`/poa/${poa.id}/editar`)}>Editar POA</button>
-          <button className="px-3 py-1 rounded border text-sm" onClick={() => navigate(`/poa/${poa.id}/calendario`)}>Ver Calendario</button>
+        <div className="text-sm text-gray-500">Período: {fmtFecha(poa.fecha_inicio)} — {fmtFecha(poa.fecha_fin)}</div>
+        <div className="mt-4 border-t border-slate-200 pt-4 flex gap-2">
+          <button className="px-4 py-1.5 rounded-full border border-slate-300 text-sm text-slate-700 font-medium hover:bg-[#fbeaea] hover:border-[#871A1A]/40 transition-colors" onClick={() => navigate(`/poa/${poa.id}/editar`)}>Editar POA</button>
+          <button className="px-4 py-1.5 rounded-full border border-slate-300 text-sm text-slate-700 font-medium hover:bg-[#fbeaea] hover:border-[#871A1A]/40 transition-colors" onClick={() => navigate(`/poa/${poa.id}/calendario`)}>Ver Calendario</button>
         </div>
         <div className="mt-4">
           <div className="flex justify-between items-center mb-3">
@@ -680,12 +751,12 @@ function PoaDetail({ id, poas, metas, setMetas, actividades = [], setActividades
               <button
                 onClick={() => cargarMetas(true)}
                 disabled={cargandoMetas}
-                className="px-3 py-1 border rounded text-sm text-gray-600 disabled:opacity-40"
+                className="px-4 py-1.5 border border-slate-300 rounded-full text-sm text-slate-700 font-medium hover:bg-slate-50 transition-colors disabled:opacity-40"
                 title="Recargar metas"
               >↻ Actualizar</button>
               <button
                 onClick={() => navigate(`/poa/${poa.id}/metas/nueva`)}
-                className="px-4 py-2 bg-[#871A1A] text-white rounded text-sm"
+                className="px-5 py-2 bg-[#871A1A] hover:bg-[#6b1313] text-white rounded-full shadow-sm font-medium transition-colors text-sm"
               >
                 + Agregar Meta
               </button>
@@ -693,26 +764,26 @@ function PoaDetail({ id, poas, metas, setMetas, actividades = [], setActividades
           </div>
           <div className="space-y-2">
             {cargandoMetas && poaMetas.length === 0 && (
-              <div className="text-gray-400 text-sm py-4 text-center border rounded animate-pulse">
+              <div className="text-slate-400 text-sm py-6 text-center border border-dashed border-slate-300 rounded-xl bg-slate-50 animate-pulse">
                 Cargando metas del servidor...
               </div>
             )}
             {!cargandoMetas && poaMetas.length === 0 && (
-              <div className="text-gray-500 text-sm py-4 text-center border rounded">
+              <div className="text-slate-500 text-sm py-6 text-center border border-dashed border-slate-300 rounded-xl bg-slate-50">
                 Este POA aún no tiene metas. Usa el botón "Agregar Meta" para comenzar.
               </div>
             )}
             {poaMetas.map((m) => (
-              <div key={m.id} className="border p-3 rounded flex justify-between items-center">
+              <div key={m.id} className="border border-slate-200 bg-white p-3 rounded-xl flex justify-between items-center hover:border-[#871A1A]/30 hover:shadow-md transition">
                 <div>
                   <div className="font-medium">{m.nombre}</div>
                   <div className="text-xs text-gray-500">Presupuesto: ${Number(m.presupuesto).toFixed(2)}</div>
                   {m.descripcion && <div className="text-xs text-gray-400 mt-0.5">{m.descripcion}</div>}
                 </div>
-                <div className="space-x-2 flex-shrink-0">
-                  <button className="text-[#871A1A] text-sm" onClick={() => navigate(`/meta/${m.id}`)}>Ver</button>
-                  <button className="text-orange-600 text-sm" onClick={() => navigate(`/meta/${m.id}/editar`)}>Editar</button>
-                  <button className="text-red-600 text-sm" onClick={() => handleEliminarMeta(m)}>Eliminar</button>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button className="text-[#871A1A] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fbeaea] transition-colors" onClick={() => navigate(`/meta/${m.id}`)}>Ver</button>
+                  <button className="text-[#b45309] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fef3c7] transition-colors" onClick={() => navigate(`/meta/${m.id}/editar`)}>Editar</button>
+                  <button className="text-[#d93025] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fce8e6] transition-colors" onClick={() => handleEliminarMeta(m)}>Eliminar</button>
                 </div>
               </div>
             ))}
@@ -746,7 +817,7 @@ function MetaForm({ poaId, setMetas, navigate }) {
 
   return (
     <div className="p-6 flex justify-center">
-      <div className="bg-white p-6 rounded shadow w-full max-w-xl space-y-4">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 w-full max-w-xl space-y-4">
         <div>
           <button onClick={() => navigate(`/poa/${poaId}`)} className="text-sm text-gray-500 hover:underline">← Volver al POA</button>
         </div>
@@ -754,22 +825,22 @@ function MetaForm({ poaId, setMetas, navigate }) {
         <div>
           <label className="text-sm font-medium">Nombre de la Meta *</label>
           <input value={nombre} onChange={(e) => setNombre(e.target.value)}
-            className="w-full border px-3 py-2 rounded mt-1" placeholder="Ej: Mejorar sistema de riego" />
+            className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" placeholder="Ej: Mejorar sistema de riego" />
         </div>
         <div>
           <label className="text-sm font-medium">Descripción</label>
           <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)}
-            className="w-full border px-3 py-2 rounded mt-1" placeholder="Describe la meta..." rows={3} />
+            className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" placeholder="Describe la meta..." rows={3} />
         </div>
         <div>
           <label className="text-sm font-medium">Presupuesto ($) *</label>
           <input type="number" step="0.01" value={presupuesto} onChange={(e) => setPresupuesto(e.target.value)}
-            className="w-full border px-3 py-2 rounded mt-1" placeholder="Ej: 50000.00" />
+            className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" placeholder="Ej: 50000.00" />
         </div>
-        {error && <div className="text-red-600 text-sm">{error}</div>}
+        {error && <div className="text-[#d93025] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fce8e6] transition-colors">{error}</div>}
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={() => navigate(`/poa/${poaId}`)} className="px-4 py-2 border rounded">Cancelar</button>
-          <button onClick={save} disabled={guardando} className="px-4 py-2 bg-[#871A1A] text-white rounded disabled:opacity-50">
+          <button onClick={() => navigate(`/poa/${poaId}`)} className="px-5 py-2 border border-slate-300 rounded-full text-slate-700 font-medium hover:bg-slate-50 transition-colors">Cancelar</button>
+          <button onClick={save} disabled={guardando} className="px-5 py-2 bg-[#871A1A] hover:bg-[#6b1313] text-white rounded-full shadow-sm font-medium transition-colors disabled:opacity-50">
             {guardando ? 'Guardando...' : 'Guardar Meta'}
           </button>
         </div>
@@ -798,28 +869,28 @@ function MetaEditForm({ metaId, metas, setMetas, navigate }) {
 
   return (
     <div className="p-6 flex justify-center">
-      <div className="bg-white p-6 rounded shadow w-full max-w-xl space-y-4">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 w-full max-w-xl space-y-4">
         <div>
           <button onClick={() => navigate(`/poa/${meta.id_poa}`)} className="text-sm text-gray-500 hover:underline">← Volver al POA</button>
         </div>
         <h2 className="text-xl font-bold text-[#871A1A]">Editar Meta</h2>
         <div>
           <label className="text-sm font-medium">Nombre de la Meta *</label>
-          <input value={nombre} onChange={(e) => setNombre(e.target.value)} className="w-full border px-3 py-2 rounded mt-1" />
+          <input value={nombre} onChange={(e) => setNombre(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
         </div>
         <div>
           <label className="text-sm font-medium">Descripción</label>
           <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)}
-            className="w-full border px-3 py-2 rounded mt-1" rows={3} />
+            className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" rows={3} />
         </div>
         <div>
           <label className="text-sm font-medium">Presupuesto ($) *</label>
-          <input type="number" step="0.01" value={presupuesto} onChange={(e) => setPresupuesto(e.target.value)} className="w-full border px-3 py-2 rounded mt-1" />
+          <input type="number" step="0.01" value={presupuesto} onChange={(e) => setPresupuesto(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
         </div>
-        {error && <div className="text-red-600 text-sm">{error}</div>}
+        {error && <div className="text-[#d93025] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fce8e6] transition-colors">{error}</div>}
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={() => navigate(`/poa/${meta.id_poa}`)} className="px-4 py-2 border rounded">Cancelar</button>
-          <button onClick={save} className="px-4 py-2 bg-[#871A1A] text-white rounded">Guardar Meta</button>
+          <button onClick={() => navigate(`/poa/${meta.id_poa}`)} className="px-5 py-2 border border-slate-300 rounded-full text-slate-700 font-medium hover:bg-slate-50 transition-colors">Cancelar</button>
+          <button onClick={save} className="px-5 py-2 bg-[#871A1A] hover:bg-[#6b1313] text-white rounded-full shadow-sm font-medium transition-colors">Guardar Meta</button>
         </div>
       </div>
     </div>
@@ -848,38 +919,38 @@ function MetaDetail({ id, metas, actividades, setActividades, avances, navigate 
         <button onClick={() => navigate(`/poa/${meta.id_poa}`)} className="text-sm text-gray-500 hover:underline">← Volver al POA</button>
       </div>
       <h3 className="text-lg font-semibold">{meta.nombre}</h3>
-      <div className="bg-white p-4 rounded shadow mt-3">
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mt-3">
         <div className="text-sm text-gray-600">Presupuesto: ${Number(meta.presupuesto).toFixed(2)}</div>
         <div className="mt-3 text-sm">Progreso estimado: {progreso}%</div>
-        <div className="w-full bg-gray-200 rounded h-2 mt-1">
-          <div className="bg-[#871A1A] h-2 rounded transition-all" style={{ width: `${progreso}%` }} />
+        <div className="w-full bg-slate-200 rounded-full h-2.5 mt-1 overflow-hidden">
+          <div className="bg-gradient-to-r from-[#871A1A] to-[#d93025] h-2.5 rounded-full transition-all" style={{ width: `${progreso}%` }} />
         </div>
         <div className="mt-5">
           <div className="flex justify-between items-center mb-3">
             <h4 className="font-semibold">Actividades ({metaActividades.length})</h4>
             <button onClick={() => navigate(`/meta/${meta.id}/actividad/nueva`)}
-              className="px-3 py-1 bg-[#871A1A] text-white rounded text-sm">
+              className="px-4 py-1.5 bg-[#871A1A] hover:bg-[#6b1313] text-white rounded-full shadow-sm font-medium transition-colors text-sm">
               + Agregar Actividad
             </button>
           </div>
           <div className="space-y-2">
             {metaActividades.length === 0 && <div className="text-gray-500 text-sm">No hay actividades registradas.</div>}
             {metaActividades.map((a) => (
-              <div key={a.id} className="border p-3 rounded flex justify-between items-center">
+              <div key={a.id} className="border border-slate-200 bg-white p-3 rounded-xl flex justify-between items-center hover:border-[#871A1A]/30 hover:shadow-md transition">
                 <div>
                   <div className="font-medium">{a.nombre}</div>
-                  <div className="text-xs text-gray-500">{a.fecha_inicio_planificada} → {a.fecha_fin_planificada}</div>
-                  <span className={`text-xs px-2 py-0.5 rounded ${
-                    a.estado === 'Completada'   ? 'bg-green-100 text-green-700'
-                    : a.estado === 'Vencida'    ? 'bg-red-100 text-red-700'
-                    : a.estado === 'En progreso'? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-blue-100 text-blue-700'
+                  <div className="text-xs text-gray-500">{fmtFecha(a.fecha_inicio_planificada)} → {fmtFecha(a.fecha_fin_planificada)}</div>
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
+                    a.estado === 'Completada'   ? 'bg-[#e6f4ea] text-[#137333]'
+                    : a.estado === 'Vencida'    ? 'bg-[#fce8e6] text-[#c5221f]'
+                    : a.estado === 'En progreso'? 'bg-[#fef7e0] text-[#b06000]'
+                    : 'bg-[#e8f0fe] text-[#1967d2]'
                   }`}>{a.estado}</span>
                 </div>
-                <div className="space-x-2 flex-shrink-0">
-                  <button className="text-[#871A1A] text-sm" onClick={() => navigate(`/actividad/${a.id}`)}>Ver</button>
-                  <button className="text-orange-600 text-sm" onClick={() => navigate(`/actividad/${a.id}/editar`)}>Editar</button>
-                  <button className="text-red-600 text-sm" onClick={() => handleEliminar(a.id)}>Eliminar</button>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button className="text-[#871A1A] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fbeaea] transition-colors" onClick={() => navigate(`/actividad/${a.id}`)}>Ver</button>
+                  <button className="text-[#b45309] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fef3c7] transition-colors" onClick={() => navigate(`/actividad/${a.id}/editar`)}>Editar</button>
+                  <button className="text-[#d93025] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fce8e6] transition-colors" onClick={() => handleEliminar(a.id)}>Eliminar</button>
                 </div>
               </div>
             ))}
@@ -930,24 +1001,24 @@ function ActividadForm({ id, metaId, actividades, metas, setActividades, navigat
         <button onClick={() => navigate(backRoute)} className="text-sm text-gray-500 hover:underline">← Volver</button>
       </div>
       <h3 className="text-lg font-semibold mb-3">{editing ? 'Editar Actividad' : 'Registrar Actividad'}</h3>
-      <div className="bg-white p-4 rounded shadow max-w-2xl space-y-3">
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 max-w-2xl space-y-3">
         <div>
           <label className="text-sm">Nombre de Actividad *</label>
-          <input value={nombre} onChange={(e) => setNombre(e.target.value)} className="w-full border px-3 py-2 rounded mt-1" />
+          <input value={nombre} onChange={(e) => setNombre(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
         </div>
         <div className="flex gap-2">
           <div className="flex-1">
             <label className="text-sm">Fecha Inicio Planificada *</label>
-            <input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="w-full border px-3 py-2 rounded mt-1" />
+            <input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
           </div>
           <div className="flex-1">
             <label className="text-sm">Fecha Fin Planificada *</label>
-            <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} className="w-full border px-3 py-2 rounded mt-1" />
+            <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
           </div>
         </div>
         <div>
           <label className="text-sm">Meta *</label>
-          <select value={selMeta} onChange={(e) => setSelMeta(e.target.value)} className="w-full border px-3 py-2 rounded mt-1">
+          <select value={selMeta} onChange={(e) => setSelMeta(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]">
             <option value="">-- Selecciona una meta --</option>
             {metas.map((m) => (
               <option key={m.id} value={m.id}>{m.nombre}</option>
@@ -957,12 +1028,12 @@ function ActividadForm({ id, metaId, actividades, metas, setActividades, navigat
         <div>
           <label className="text-sm">Unidad de Medida</label>
           <input value={unidad} onChange={(e) => setUnidad(e.target.value)}
-            className="w-full border px-3 py-2 rounded mt-1" placeholder="Ej: Informes, Talleres, Km..." />
+            className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" placeholder="Ej: Informes, Talleres, Km..." />
         </div>
-        {error && <div className="text-red-600 text-sm">{error}</div>}
+        {error && <div className="text-[#d93025] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fce8e6] transition-colors">{error}</div>}
         <div className="flex justify-end gap-2">
-          <button onClick={() => navigate(backRoute)} className="px-4 py-2 border rounded">Cancelar</button>
-          <button onClick={save} disabled={guardando} className="px-4 py-2 bg-[#871A1A] text-white rounded disabled:opacity-50">
+          <button onClick={() => navigate(backRoute)} className="px-5 py-2 border border-slate-300 rounded-full text-slate-700 font-medium hover:bg-slate-50 transition-colors">Cancelar</button>
+          <button onClick={save} disabled={guardando} className="px-5 py-2 bg-[#871A1A] hover:bg-[#6b1313] text-white rounded-full shadow-sm font-medium transition-colors disabled:opacity-50">
             {guardando ? 'Guardando...' : 'Guardar'}
           </button>
         </div>
@@ -980,13 +1051,13 @@ function ActividadDetalle({ id, actividades, navigate }) {
         <button onClick={() => navigate(`/meta/${act.id_meta}`)} className="text-sm text-gray-500 hover:underline">← Volver a la Meta</button>
       </div>
       <h3 className="text-lg font-semibold">{act.nombre}</h3>
-      <div className="bg-white p-4 rounded shadow mt-3 space-y-2 text-sm">
-        <div>Fechas: {act.fecha_inicio_planificada} → {act.fecha_fin_planificada}</div>
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mt-3 space-y-2 text-sm">
+        <div>Fechas: {fmtFecha(act.fecha_inicio_planificada)} → {fmtFecha(act.fecha_fin_planificada)}</div>
         <div>Unidad: {act.unidad_medida || '—'}</div>
         <div>Estado: {act.estado}</div>
         <div className="mt-4 space-x-2">
-          <button onClick={() => navigate(`/actividad/${act.id}/avance`)} className="px-3 py-1 bg-[#871A1A] text-white rounded">Registrar Avance</button>
-          <button onClick={() => navigate(`/actividad/${act.id}/editar`)} className="px-3 py-1 border rounded">Editar</button>
+          <button onClick={() => navigate(`/actividad/${act.id}/avance`)} className="px-4 py-1.5 bg-[#871A1A] hover:bg-[#6b1313] text-white rounded-full shadow-sm font-medium transition-colors">Registrar Avance</button>
+          <button onClick={() => navigate(`/actividad/${act.id}/editar`)} className="px-4 py-1.5 border border-slate-300 rounded-full text-slate-700 font-medium hover:bg-slate-50 transition-colors">Editar</button>
         </div>
       </div>
     </div>
@@ -1018,31 +1089,31 @@ function RegistroAvance({ actividadId, actividades, avances, setAvances, navigat
         <button onClick={() => navigate(`/meta/${actividad.id_meta}`)} className="text-sm text-gray-500 hover:underline">← Volver a la Meta</button>
       </div>
       <h3 className="text-lg font-semibold">Registrar Avance — {actividad.nombre}</h3>
-      <div className="bg-white p-4 rounded shadow max-w-2xl mt-3 space-y-3">
-        <div className="text-sm text-gray-600">Periodo: {actividad.fecha_inicio_planificada} → {actividad.fecha_fin_planificada}</div>
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 max-w-2xl mt-3 space-y-3">
+        <div className="text-sm text-gray-600">Periodo: {fmtFecha(actividad.fecha_inicio_planificada)} → {fmtFecha(actividad.fecha_fin_planificada)}</div>
         <div>
           <label className="text-sm">Porcentaje de Avance (0–100)</label>
           <input type="number" value={porcentaje} onChange={(e) => setPorcentaje(e.target.value)}
-            min={0} max={100} className="w-full border px-3 py-2 rounded mt-1" />
+            min={0} max={100} className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
         </div>
         <div>
           <label className="text-sm">Comentarios</label>
           <textarea value={comentariosLocal} onChange={(e) => setComentariosLocal(e.target.value)}
-            className="w-full border px-3 py-2 rounded mt-1" rows={3} />
+            className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" rows={3} />
         </div>
         <div>
           <h4 className="font-semibold text-sm mb-2">Historial de avances</h4>
           {hist.length === 0 && <div className="text-gray-500 text-sm">Sin registros aún</div>}
           {hist.map((h) => (
-            <div key={h.id} className="border p-2 rounded mb-1">
+            <div key={h.id} className="border border-slate-200 p-2 rounded-lg mb-1 bg-white">
               <div className="font-medium text-sm">{h.porcentaje}%</div>
               <div className="text-xs text-gray-500">{h.fecha} · {h.comentarios}</div>
             </div>
           ))}
         </div>
         <div className="flex justify-end gap-2">
-          <button onClick={() => navigate(`/meta/${actividad.id_meta}`)} className="px-4 py-2 border rounded">Cancelar</button>
-          <button onClick={guardar} className="px-4 py-2 bg-[#871A1A] text-white rounded">Guardar Avance</button>
+          <button onClick={() => navigate(`/meta/${actividad.id_meta}`)} className="px-5 py-2 border border-slate-300 rounded-full text-slate-700 font-medium hover:bg-slate-50 transition-colors">Cancelar</button>
+          <button onClick={guardar} className="px-5 py-2 bg-[#871A1A] hover:bg-[#6b1313] text-white rounded-full shadow-sm font-medium transition-colors">Guardar Avance</button>
         </div>
       </div>
     </div>
@@ -1072,11 +1143,11 @@ function CalendarioPOA({ poaId, poas, metas, actividades, avances, navigate }) {
   const renderDay = (d) => {
     const evts = CalendarioService.eventosDel(eventos, year, month, d);
     return (
-      <div key={d} className="border p-2 min-h-[110px] bg-white rounded">
+      <div key={d} className="border border-slate-200 p-2 min-h-[110px] bg-white rounded-lg">
         <div className="text-lg font-bold">{d}</div>
         {evts.map((ev) => (
           <div key={ev.id} onClick={() => navigate(`/actividad/${ev.id}`)}
-            className={`text-sm mt-1 px-2 py-1 rounded cursor-pointer hover:opacity-80 ${ev.color}`}>
+            className={`text-sm mt-1 px-2 py-1 rounded-md cursor-pointer hover:opacity-80 ${ev.color}`}>
             {ev.nombre}
           </div>
         ))}
@@ -1085,24 +1156,24 @@ function CalendarioPOA({ poaId, poas, metas, actividades, avances, navigate }) {
   };
 
   const grid = [];
-  for (let i = 0; i < startDay; i++) grid.push(<div key={`e${i}`} className="border bg-gray-100 min-h-[110px]" />);
+  for (let i = 0; i < startDay; i++) grid.push(<div key={`e${i}`} className="border border-slate-200 bg-slate-50 min-h-[110px] rounded-lg" />);
   for (let d = 1; d <= daysInMonth; d++) grid.push(renderDay(d));
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
-        <button onClick={() => setCurrentDate(CalendarioService.mesAnterior(currentDate))} className="px-4 py-2 bg-gray-300 rounded text-lg">◀</button>
+        <button onClick={() => setCurrentDate(CalendarioService.mesAnterior(currentDate))} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-full text-lg transition-colors">◀</button>
         <h2 className="text-2xl font-bold">{monthName} {year}</h2>
-        <button onClick={() => setCurrentDate(CalendarioService.mesSiguiente(currentDate))} className="px-4 py-2 bg-gray-300 rounded text-lg">▶</button>
+        <button onClick={() => setCurrentDate(CalendarioService.mesSiguiente(currentDate))} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-full text-lg transition-colors">▶</button>
       </div>
       <div className="grid grid-cols-7 gap-2">{grid}</div>
-      <div className="mt-6 border-t pt-4">
+      <div className="mt-6 border-t border-slate-200 pt-4">
         <div className="text-center font-bold text-base mb-3">LEYENDA</div>
         <div className="flex gap-4 text-sm justify-center font-semibold">
-          <span className="bg-blue-500 text-white px-3 py-2 rounded">Programadas</span>
-          <span className="bg-yellow-400 text-black px-3 py-2 rounded">En proceso</span>
-          <span className="bg-green-600 text-white px-3 py-2 rounded">Completadas</span>
-          <span className="bg-red-600 text-white px-3 py-2 rounded">Vencidas</span>
+          <span className="bg-[#1a73e8] text-white px-4 py-1.5 rounded-full text-sm font-medium">Programadas</span>
+          <span className="bg-[#fbbc04] text-black px-4 py-1.5 rounded-full text-sm font-medium">En proceso</span>
+          <span className="bg-[#1e8e3e] text-white px-4 py-1.5 rounded-full text-sm font-medium">Completadas</span>
+          <span className="bg-[#d93025] text-white px-4 py-1.5 rounded-full text-sm font-medium">Vencidas</span>
         </div>
       </div>
     </div>
@@ -1113,7 +1184,7 @@ function AlertasPage({ alerts, notificaciones, navigate }) {
   return (
     <div className="p-6">
       <h3 className="text-lg font-semibold mb-3">Alertas y recordatorios</h3>
-      <div className="bg-white p-4 rounded shadow space-y-3">
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
         {!notificaciones && (
           <div className="text-gray-500 text-sm">
             Las alertas están desactivadas. Puedes activarlas en Configuración.
@@ -1123,7 +1194,7 @@ function AlertasPage({ alerts, notificaciones, navigate }) {
           <div className="text-gray-500">No hay alertas importantes</div>
         )}
         {notificaciones && alerts.map((a, i) => (
-          <div key={i} className="border p-3 rounded flex justify-between items-center">
+          <div key={i} className="border border-slate-200 bg-white p-3 rounded-xl flex justify-between items-center hover:border-[#871A1A]/30 hover:shadow-md transition">
             <div>
               <div className="font-medium">{a.actividad.nombre}</div>
               <div className="text-xs text-gray-500">
@@ -1217,21 +1288,21 @@ function ConfiguracionPOA({ user, setUser, notificaciones, setNotificaciones }) 
       <div className="bg-white p-5 rounded shadow space-y-5">
         <h3 className="font-semibold text-lg">Mis Datos</h3>
         <div className="grid grid-cols-2 gap-4">
-          <input type="text" placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} className="border px-3 py-2 rounded" />
-          <input type="text" placeholder="Apellido" value={apellido} onChange={(e) => setApellido(e.target.value)} className="border px-3 py-2 rounded" />
-          <input type="email" placeholder="Correo electrónico" value={email} onChange={(e) => setEmail(e.target.value)} className="border px-3 py-2 rounded col-span-2" />
+          <input type="text" placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} className="border border-slate-300 px-3 py-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
+          <input type="text" placeholder="Apellido" value={apellido} onChange={(e) => setApellido(e.target.value)} className="border border-slate-300 px-3 py-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
+          <input type="email" placeholder="Correo electrónico" value={email} onChange={(e) => setEmail(e.target.value)} className="border border-slate-300 px-3 py-2 rounded-lg col-span-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
         </div>
         <div className="space-y-2">
           <h4 className="font-semibold text-sm">Cambiar Contraseña</h4>
-          <input type="password" autoComplete="current-password" placeholder="Contraseña actual" value={passActual} onChange={(e) => setPassActual(e.target.value)} className="border px-3 py-2 rounded w-full" />
-          <input type="password" autoComplete="new-password" placeholder="Nueva contraseña" value={passNueva} onChange={(e) => setPassNueva(e.target.value)} className="border px-3 py-2 rounded w-full" />
-          <input type="password" autoComplete="new-password" placeholder="Confirmar nueva contraseña" value={passConfirm} onChange={(e) => setPassConfirm(e.target.value)} className="border px-3 py-2 rounded w-full" />
+          <input type="password" autoComplete="current-password" placeholder="Contraseña actual" value={passActual} onChange={(e) => setPassActual(e.target.value)} className="border border-slate-300 px-3 py-2 rounded-lg w-full bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
+          <input type="password" autoComplete="new-password" placeholder="Nueva contraseña" value={passNueva} onChange={(e) => setPassNueva(e.target.value)} className="border border-slate-300 px-3 py-2 rounded-lg w-full bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
+          <input type="password" autoComplete="new-password" placeholder="Confirmar nueva contraseña" value={passConfirm} onChange={(e) => setPassConfirm(e.target.value)} className="border border-slate-300 px-3 py-2 rounded-lg w-full bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
         </div>
         {msg   && <div className="text-green-600 text-sm">{msg}</div>}
-        {error && <div className="text-red-600 text-sm">{error}</div>}
+        {error && <div className="text-[#d93025] text-sm font-medium px-3 py-1 rounded-full hover:bg-[#fce8e6] transition-colors">{error}</div>}
       </div>
       <div className="flex justify-end">
-        <button onClick={guardar} className="px-5 py-2 bg-[#460809] text-white rounded shadow">Guardar Configuración</button>
+        <button onClick={guardar} className="px-5 py-2 bg-[#460809] hover:bg-[#2f0506] text-white rounded-full shadow-sm font-medium transition-colors">Guardar Configuración</button>
       </div>
     </div>
   );
@@ -1380,7 +1451,7 @@ export default function POAApp() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100 overflow-hidden">
+    <div className="flex h-screen bg-[#f3f6fb] overflow-hidden">
       <Sidebar route={route} navigate={navigate} user={user} onLogout={handleLogout} />
       <div className="flex-1 flex flex-col min-w-0">
         <Header user={user} />
