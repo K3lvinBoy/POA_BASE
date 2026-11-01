@@ -132,14 +132,18 @@ class ActividadService {
     return actividades.filter((a) => a.id_meta === Number(metaId));
   }
   static proximasDias(actividades, dias = 7) {
-    const today = new Date();
-    return actividades.filter((a) => {
-      if (!a.fecha_inicio_planificada) return false;
-      const inicio = new Date(a.fecha_inicio_planificada);
-      const diff = Math.ceil((inicio - today) / (1000 * 60 * 60 * 24));
-      return diff >= 0 && diff <= dias;
-    });
-  }
+  const now = new Date();
+  const hoy = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const limite = new Date(hoy);
+  limite.setDate(limite.getDate() + dias);
+  return actividades.filter((a) => {
+    const inicio = aFechaLocal(a.fecha_inicio_planificada);
+    const fin = aFechaLocal(a.fecha_fin_planificada);
+    if (isNaN(inicio) || isNaN(fin)) return false;
+    // empieza dentro de los próximos 7 días, o ya empezó y aún no termina
+    return inicio <= limite && fin >= hoy;
+  });
+}
   static contarDelMes(actividades) {
     const hoy = new Date();
     return actividades.filter((a) => {
