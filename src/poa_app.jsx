@@ -290,9 +290,29 @@ function InputFecha({ value, onChange, className, ...rest }) {
     onChange(textoAISO(t));
   }
 
+  const nativo = useRef(null);
+  function abrirCalendario() {
+    const el = nativo.current;
+    if (!el) return;
+    if (typeof el.showPicker === 'function') { try { el.showPicker(); return; } catch (err) { /* sigue */ } }
+    el.focus(); el.click();
+  }
+  function elegirDelCalendario(e) {
+    const iso = e.target.value;
+    setTexto(aTexto(iso));
+    onChange(iso);
+  }
+
   return (
-    <input type="text" inputMode="numeric" placeholder="DD/MM/AAAA" maxLength={10}
-      value={texto} onChange={handle} className={className} {...rest} />
+    <div className="relative">
+      <input type="text" inputMode="numeric" placeholder="DD/MM/AAAA" maxLength={10}
+        value={texto} onChange={handle} className={className} {...rest} />
+      <button type="button" onClick={abrirCalendario} title="Abrir calendario" aria-label="Abrir calendario"
+        className="absolute right-2 top-1/2 -translate-y-1/2 text-lg leading-none px-1 hover:opacity-70">📅</button>
+      <input ref={nativo} type="date" value={aISO(value)} onChange={elegirDelCalendario}
+        tabIndex={-1} aria-hidden="true"
+        style={{ position: 'absolute', right: 0, bottom: 0, width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
+    </div>
   );
 }
 
