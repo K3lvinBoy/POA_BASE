@@ -167,6 +167,12 @@ class AlertaService {
   }
 }
 
+// "2026-01-05T00:00:00.000Z" -> 5 de enero a las 00:00 en hora local (evita el corrimiento de zona horaria)
+function aFechaLocal(f) {
+  const m = String(f || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(NaN);
+}
+
 class CalendarioService {
   static MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
     'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -181,8 +187,9 @@ class CalendarioService {
   static calcularEventos(actividades, avances) {
     const hoy = new Date();
     return actividades.map((a) => {
-      const inicio = new Date(a.fecha_inicio_planificada);
-      const fin = new Date(a.fecha_fin_planificada);
+      const inicio = aFechaLocal(a.fecha_inicio_planificada);
+      const fin = aFechaLocal(a.fecha_fin_planificada);
+      fin.setHours(23, 59, 59, 999);
       const avancesAct = avances.filter((av) => av.id_actividad === a.id);
       const maxAvance = avancesAct.length ? Math.max(...avancesAct.map((av) => av.porcentaje)) : 0;
       let estadoFinal = 'Programada';
@@ -200,8 +207,8 @@ class CalendarioService {
   static eventosDel(eventos, year, month, day) {
     const current = new Date(year, month, day);
     return eventos.filter((e) => {
-      const start = new Date(e.fecha_inicio_planificada);
-      const end = new Date(e.fecha_fin_planificada);
+      const start = aFechaLocal(e.fecha_inicio_planificada);
+      const end = aFechaLocal(e.fecha_fin_planificada);
       return current >= start && current <= end;
     });
   }
