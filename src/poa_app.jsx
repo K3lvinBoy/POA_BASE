@@ -250,6 +250,53 @@ function fmtFecha(f) {
   return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
+
+// Convierte cualquier fecha del servidor (ISO con hora) a "AAAA-MM-DD" (formato interno)
+function aISO(f) {
+  if (!f) return '';
+  const m = String(f).match(/^(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : '';
+}
+
+// Campo de fecha en formato mexicano DD/MM/AAAA (no depende del idioma del navegador).
+// Recibe y entrega el valor interno "AAAA-MM-DD".
+function InputFecha({ value, onChange, className, ...rest }) {
+  const aTexto = (iso) => {
+    const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
+  };
+  const [texto, setTexto] = useState(aTexto(value));
+
+  useEffect(() => {
+    // Sincroniza solo cuando el valor externo cambia a algo distinto de lo escrito
+    if (value && value !== textoAISO(texto)) setTexto(aTexto(value));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  function textoAISO(t) {
+    const m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!m) return '';
+    const [, d, mo, y] = m;
+    const dt = new Date(Date.UTC(+y, +mo - 1, +d));
+    const valida = dt.getUTCFullYear() === +y && dt.getUTCMonth() === +mo - 1 && dt.getUTCDate() === +d;
+    return valida ? `${y}-${mo}-${d}` : '';
+  }
+
+  function handle(e) {
+    const dig = e.target.value.replace(/\D/g, '').slice(0, 8);
+    let t = dig;
+    if (dig.length > 4) t = `${dig.slice(0, 2)}/${dig.slice(2, 4)}/${dig.slice(4)}`;
+    else if (dig.length > 2) t = `${dig.slice(0, 2)}/${dig.slice(2)}`;
+    setTexto(t);
+    onChange(textoAISO(t));
+  }
+
+  return (
+    <input type="text" inputMode="numeric" placeholder="DD/MM/AAAA" maxLength={10}
+      value={texto} onChange={handle} className={className} {...rest} />
+  );
+}
+
 // Iconos de línea (24x24) para menú y tarjetas
 const ICONOS = {
   inicio:   'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
@@ -628,8 +675,8 @@ function PoaForm({ poas, setPoas, navigate, editId }) {
   const editing = poas.find((p) => p.id === Number(editId));
   const [nombre, setNombre]           = useState(editing?.nombre       || '');
   const [anio, setAnio]               = useState(editing?.anio         || new Date().getFullYear());
-  const [fechaInicio, setFechaInicio] = useState(editing?.fecha_inicio || '');
-  const [fechaFin, setFechaFin]       = useState(editing?.fecha_fin    || '');
+  const [fechaInicio, setFechaInicio] = useState(aISO(editing?.fecha_inicio));
+  const [fechaFin, setFechaFin]       = useState(aISO(editing?.fecha_fin));
   const [estado, setEstado]           = useState(editing?.estado       || 'Pendiente');
   const [responsable, setResponsable] = useState(editing?.responsable  || '');
 
@@ -671,11 +718,11 @@ function PoaForm({ poas, setPoas, navigate, editId }) {
         <div className="flex gap-2">
           <div className="flex-1">
             <label className="text-sm">Fecha Inicio</label>
-            <input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
+            <InputFecha value={fechaInicio} onChange={setFechaInicio} className="w-full border border-slate-300 px-3 py-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
           </div>
           <div className="flex-1">
             <label className="text-sm">Fecha Fin</label>
-            <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
+            <InputFecha value={fechaFin} onChange={setFechaFin} className="w-full border border-slate-300 px-3 py-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
           </div>
         </div>
         <div>
@@ -978,8 +1025,8 @@ function MetaDetail({ id, metas, actividades, setActividades, avances, navigate 
 function ActividadForm({ id, metaId, actividades, metas, setActividades, navigate, origen }) {
   const editing   = actividades.find((a) => a.id === Number(id));
   const [nombre, setNombre]           = useState(editing?.nombre                  || '');
-  const [fechaInicio, setFechaInicio] = useState(editing?.fecha_inicio_planificada || '');
-  const [fechaFin, setFechaFin]       = useState(editing?.fecha_fin_planificada    || '');
+  const [fechaInicio, setFechaInicio] = useState(aISO(editing?.fecha_inicio_planificada));
+  const [fechaFin, setFechaFin]       = useState(aISO(editing?.fecha_fin_planificada));
   const [unidad, setUnidad]           = useState(editing?.unidad_medida            || '');
   const [selMeta, setSelMeta]         = useState(String(editing?.id_meta || metaId || ''));
   const [error, setError]             = useState('');
@@ -1023,11 +1070,11 @@ function ActividadForm({ id, metaId, actividades, metas, setActividades, navigat
         <div className="flex gap-2">
           <div className="flex-1">
             <label className="text-sm">Fecha Inicio Planificada *</label>
-            <input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
+            <InputFecha value={fechaInicio} onChange={setFechaInicio} className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
           </div>
           <div className="flex-1">
             <label className="text-sm">Fecha Fin Planificada *</label>
-            <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
+            <InputFecha value={fechaFin} onChange={setFechaFin} className="w-full border border-slate-300 px-3 py-2 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#871A1A]/30 focus:border-[#871A1A]" />
           </div>
         </div>
         <div>
@@ -1123,7 +1170,7 @@ function RegistroAvance({ actividadId, actividades, avances, setAvances, navigat
           {hist.map((h) => (
             <div key={h.id} className="border border-slate-200 p-2 rounded-lg mb-1 bg-white">
               <div className="font-medium text-sm">{h.porcentaje}%</div>
-              <div className="text-xs text-gray-500">{h.fecha} · {h.comentarios}</div>
+              <div className="text-xs text-gray-500">{fmtFecha(h.fecha)} · {h.comentarios}</div>
             </div>
           ))}
         </div>
