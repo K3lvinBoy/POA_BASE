@@ -152,11 +152,13 @@ class ActividadService {
 class AlertaService {
   static async listar() { return apiFetch('/alertas'); }
   static generar(actividades) {
-    const today = new Date();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     return actividades
       .map((a) => {
-        const end = new Date(a.fecha_fin_planificada);
-        const diff = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+        const end = aFechaLocal(a.fecha_fin_planificada);
+        if (isNaN(end)) return { actividad: a, tipo: 'Normal', dias: 0 };
+        const diff = Math.round((end - today) / (1000 * 60 * 60 * 24));
         let tipo = 'Normal';
         if (diff < 0) tipo = 'Vencida';
         else if (diff === 0) tipo = 'Hoy';
@@ -1268,24 +1270,56 @@ function CalendarioPOA({ poaId, poas, metas, actividades, avances, navigate }) {
 }
 
 function AlertasPage({ alerts, notificaciones, navigate }) {
+  const [filtro, setFiltro] = useState('todas');
+
+  const proximas = alerts.filter((a) => a.dias >= 0 && a.dias <= 7);
+  const vencidas7 = alerts.filter((a) => a.dias < -7);
+  const lista = filtro === 'proximas' ? proximas : filtro === 'vencidas7' ? vencidas7 : alerts;
+
+  const filtros = [
+    { id: 'todas',     etiqueta: 'Todas',                    n: alerts.length },
+    { id: 'proximas',  etiqueta: 'Próximos 7 días',          n: proximas.length },
+    { id: 'vencidas7', etiqueta: 'Vencidas hace más de 7 días', n: vencidas7.length },
+  ];
+
+  const textoDias = (a) => {
+    if (a.dias === 0) return 'Vence hoy';
+    if (a.dias > 0) return `Vence en ${a.dias} ${a.dias === 1 ? 'día' : 'días'}`;
+    const d = Math.abs(a.dias);
+    return `Vencida hace ${d} ${d === 1 ? 'día' : 'días'}`;
+  };
+
   return (
     <div className="p-6">
       <h3 className="text-lg font-semibold mb-3">Alertas y recordatorios</h3>
+      {notificaciones && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {filtros.map((f) => (
+            <button key={f.id} onClick={() => setFiltro(f.id)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                filtro === f.id
+                  ? 'bg-[#871A1A] text-white border-[#871A1A]'
+                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}`}>
+              {f.etiqueta} ({f.n})
+            </button>
+          ))}
+        </div>
+      )}
       <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
         {!notificaciones && (
           <div className="text-gray-500 text-sm">
             Las alertas están desactivadas. Puedes activarlas en Configuración.
           </div>
         )}
-        {notificaciones && alerts.length === 0 && (
-          <div className="text-gray-500">No hay alertas importantes</div>
+        {notificaciones && lista.length === 0 && (
+          <div className="text-gray-500">No hay alertas para este filtro</div>
         )}
-        {notificaciones && alerts.map((a, i) => (
+        {notificaciones && lista.map((a, i) => (
           <div key={i} className="border border-slate-200 bg-white p-3 rounded-xl flex justify-between items-center hover:border-[#871A1A]/30 hover:shadow-md transition">
             <div>
               <div className="font-medium">{a.actividad.nombre}</div>
               <div className="text-xs text-gray-500">
-                Fin: {fmtFecha(a.actividad.fecha_fin_planificada)} · Tipo: {a.tipo} · Días: {a.dias}
+                Fin: {fmtFecha(a.actividad.fecha_fin_planificada)} · {textoDias(a)}
               </div>
             </div>
             <button className="text-sm text-[#871A1A] font-medium px-3 py-1 rounded-full hover:bg-[#fbeaea] transition-colors" onClick={() => navigate(`/actividad/${a.actividad.id}`)}>
